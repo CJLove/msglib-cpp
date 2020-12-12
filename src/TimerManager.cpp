@@ -4,8 +4,10 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "TimerManager.h"
-#include "Mailbox.h"
+#include "msglib/TimerManager.h"
+#include "msglib/Mailbox.h"
+
+using namespace msglib;
 
 class Timer {
 public:
@@ -69,7 +71,7 @@ private:
 };
 
 
-struct TimerManagerImpl {
+struct TimerManager::TimerManagerImpl {
     using TimerMap = std::unordered_map<Label,Timer>;
 
     TimerManagerImpl() = default;
@@ -104,7 +106,7 @@ struct TimerManagerImpl {
  * @brief Static member declaration
  * 
  */
-std::unique_ptr<TimerManagerImpl> TimerManager::s_timerData = std::make_unique<TimerManagerImpl>();
+std::unique_ptr<TimerManager::TimerManagerImpl> TimerManager::s_timerData = std::make_unique<TimerManager::TimerManagerImpl>();
 
 void TimerManager::startTimer(const Label &label, const timespec &time, const TimerType_e type)
 {

@@ -13,7 +13,7 @@ endif (BUILD_COVERAGE)
 
 set (msglib-cpp_SRC
     Mailbox.cpp
-#   TimerManager.cpp
+    TimerManager.cpp
 )
 
 if(BUILD_SHARED_LIBS)

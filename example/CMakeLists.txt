@@ -18,4 +18,9 @@ target_link_libraries( pool pthread )
 set (mbox_SRC mbox.cpp)
 
 add_executable( mbox ${mbox_SRC})
-target_link_libraries( mbox msglib-cpp pthread rt )
+target_link_libraries( mbox msglib-cpp pthread )
+
+set (timer_SRC timer.cpp)
+
+add_executable( timer ${timer_SRC})
+target_link_libraries( timer msglib-cpp pthread )

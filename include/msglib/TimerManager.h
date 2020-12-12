@@ -20,7 +20,7 @@ public:
 
 private:
     struct TimerManagerImpl;
-    static std::unique_ptr<TimerManagerImpl> s_timerData;
+    static std::unique_ptr<TimerManager::TimerManagerImpl> s_timerData;
 
 };
 
