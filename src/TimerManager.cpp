@@ -1,11 +1,11 @@
+#include <csignal>
+#include <ctime>
+#include <iostream>
+#include <mutex>
+#include <unordered_map>
+
 #include "TimerManager.h"
 #include "Mailbox.h"
-#include <stdio.h>
-#include <signal.h>
-#include <time.h>
-#include <unordered_map>
-#include <mutex>
-#include <iostream>
 
 class Timer {
 public:
@@ -43,7 +43,7 @@ public:
     }
 
     void cancel() {
-        itimerspec itsnew;
+        itimerspec itsnew { };
         itsnew.it_value.tv_sec = itsnew.it_value.tv_nsec = 0;
         itsnew.it_interval.tv_sec = itsnew.it_interval.tv_nsec = 0;
         timer_settime(m_timer,0,&itsnew, &m_spec);
@@ -57,13 +57,13 @@ public:
 
 private:
     Mailbox &m_mailbox;
-    Label m_label;
-    timer_t m_timer;
-    struct sigevent m_sev;
-    struct sigaction m_sa;
-    struct itimerspec m_spec;
+    Label m_label = 0;
+    timer_t m_timer = nullptr;
+    struct sigevent m_sev {};
+    struct sigaction m_sa {};
+    struct itimerspec m_spec {};
 
-    static void handler(int sig, siginfo_t *si, void *uc) {
+    static void handler(int, siginfo_t *si, void *uc) {
         (reinterpret_cast<Timer*>(si->si_value.sival_ptr))->timerEvent();
     }
 };
@@ -72,10 +72,7 @@ private:
 struct TimerManagerImpl {
     using TimerMap = std::unordered_map<Label,Timer>;
 
-    TimerManagerImpl()
-    {
-
-    }
+    TimerManagerImpl() = default;
 
     void startTimer(const Label &label, const timespec &time, const TimerManager::TimerType_e type)
     {

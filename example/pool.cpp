@@ -12,8 +12,9 @@ struct Foo {
 
 using namespace msglib;
 
-int main(int argc, char *argv[]) {
-    msglib::Pool<Foo> mp(256);
+int main(int /* argc */, char /* *argv[] */) {
+    constexpr int SIZE = 256;
+    msglib::Pool<Foo> mp(SIZE);
 
     Foo *p1 = mp.alloc();
     Foo *p2 = mp.alloc(44);
@@ -24,8 +25,8 @@ int main(int argc, char *argv[]) {
     mp.free(p1);
     mp.free(p2);
 
-    Foo *p[256];
-    for (int i = 0; i < 256; i++) {
+    Foo *p[SIZE];
+    for (int i = 0; i < SIZE; i++) {
         p[i] = mp.alloc(i);
     }
     try {
@@ -34,7 +35,7 @@ int main(int argc, char *argv[]) {
         std::cout << "Caught " << e.what() << "\n";
     }
 
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < SIZE; i++) {
         mp.free(p[i]);
     }
 

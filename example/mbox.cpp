@@ -21,11 +21,19 @@ struct Message3 {
     int c;
 };
 
+// Labels used
+const msglib::Label Msg1 = 1;
+const msglib::Label Msg2 = 2;
+const msglib::Label Msg3 = 3;
+const msglib::Label Msg4 = 4;
+const msglib::Label Msg5 = 5;
+const msglib::Label Exit = 999;
+
 void displayMsg(const char *thread, msglib::Message &msg)
 {
     switch (msg.m_label)
     {
-        case 1:
+        case Msg1:
         {
             try {
                 Message1 *m1 = msg.as<Message1>();
@@ -36,7 +44,7 @@ void displayMsg(const char *thread, msglib::Message &msg)
             }
         }
         break;
-        case 2:
+        case Msg2:
             try {
                 Message2 *m2 = msg.as<Message2>();
                 std::cout << "Thread " << thread << " got Msg2 { " << m2->a << " }\n";
@@ -45,7 +53,7 @@ void displayMsg(const char *thread, msglib::Message &msg)
                 std::cout << "Exception " << e.what() << " getting Message2\n";
             }
             break;
-        case 3:
+        case Msg3:
             try {
                 Message3 *t = msg.as<Message3>();
                 std::cout << "Thread " << thread << " got Msg3 { " << t->a << " " << t->b << " " << t->c << " }\n";
@@ -64,53 +72,71 @@ void thread1(int inst)
 {
     msglib::Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 1 & 2\n";
-    mbox.RegisterForLabel(1);
-    mbox.RegisterForLabel(2);
+    mbox.RegisterForLabel(Msg1);
+    mbox.RegisterForLabel(Msg2);
+    mbox.RegisterForLabel(Exit);
     while (true)
     {
         msglib::Message msg;
 
         mbox.Receive(msg);
         displayMsg("Thread1",msg);
+        if (msg.m_label == Exit) {
+            mbox.ReleaseMessage(msg);
+            break;
+        }
         mbox.ReleaseMessage(msg);
     }
-    mbox.UnregisterForLabel(1);
-    mbox.UnregisterForLabel(2);
+    mbox.UnregisterForLabel(Msg1);
+    mbox.UnregisterForLabel(Msg2);
+    mbox.UnregisterForLabel(Exit);
 }
 
 void thread2(int inst)
 {
     msglib::Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 1 & 3\n";
-    mbox.RegisterForLabel(1);
-    mbox.RegisterForLabel(3);
+    mbox.RegisterForLabel(Msg1);
+    mbox.RegisterForLabel(Msg3);
+    mbox.RegisterForLabel(Exit);
     while (true)
     {
         msglib::Message msg;
         mbox.Receive(msg);
         displayMsg("Thread2",msg);
+        if (msg.m_label == Exit) {
+            mbox.ReleaseMessage(msg);
+            break;
+        }        
         mbox.ReleaseMessage(msg);
     }
-    mbox.UnregisterForLabel(1);
-    mbox.UnregisterForLabel(3);
+    mbox.UnregisterForLabel(Msg1);
+    mbox.UnregisterForLabel(Msg3);
+    mbox.UnregisterForLabel(Exit);
 }
 
 void thread3(int inst)
 {
     msglib::Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 4 & 5\n";
-    mbox.RegisterForLabel(4);
-    mbox.RegisterForLabel(5);
+    mbox.RegisterForLabel(Msg4);
+    mbox.RegisterForLabel(Msg5);
+    mbox.RegisterForLabel(Exit);
     while (true)
     {
         msglib::Message msg;
 
         mbox.Receive(msg);
         displayMsg("Thread3",msg);
+        if (msg.m_label == Exit) {
+            mbox.ReleaseMessage(msg);
+            break;
+        }        
         mbox.ReleaseMessage(msg);
     }
-    mbox.UnregisterForLabel(1);
-    mbox.UnregisterForLabel(3);
+    mbox.UnregisterForLabel(Msg1);
+    mbox.UnregisterForLabel(Msg3);
+    mbox.UnregisterForLabel(Exit);
 }
 
 int main(int /* argc */, char** /* argv */)
@@ -125,24 +151,26 @@ int main(int /* argc */, char** /* argv */)
     msglib::Mailbox mbox;
 
     Message3 msg3 { 1,2,3 };
-    mbox.SendMessage(3,msg3);
+    mbox.SendMessage(Msg3,msg3);
 
     Message2 msg2 { true };
-    mbox.SendMessage(2,msg2);
+    mbox.SendMessage(Msg2,msg2);
 
     Message1 msg1 { 1,2,3,4,true};
-    mbox.SendMessage(1,msg1);
+    mbox.SendMessage(Msg1,msg1);
 
-    mbox.SendSignal(4);
+    mbox.SendSignal(Msg4);
 
-    mbox.SendSignal(5);
+    mbox.SendSignal(Msg5);
 
-    mbox.RegisterForLabel(6);
-    while (true)
-    {
-        sleep(1);
-    }
-    mbox.UnregisterForLabel(6);
+    sleep(2);
+
+    // Send signal for all threads to exit
+    mbox.SendSignal(Exit);
+
+    t1.join();
+    t2.join();
+    t3.join();
 
     return 0;
 }

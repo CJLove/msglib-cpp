@@ -62,9 +62,6 @@ void MailboxData::freeLarge(MailboxData::LargeBlock *msg)
     m_largePool.free(msg);
 }
 
-
-
-
 Mailbox::Mailbox(): m_queue(256)
 {
 
@@ -74,7 +71,6 @@ Mailbox::~Mailbox()
 {
 
 }
-
 
 void Mailbox::RegisterForLabel(Label label)
 {
@@ -86,12 +82,11 @@ void Mailbox::UnregisterForLabel(Label label)
     s_mailboxData->UnregisterForLabel(label,this);
 }
 
-
 void Mailbox::Receive(Message &msg)
 {
-
     auto status = m_queue.take(msg);
 
+    // TBD: 
     if (status == code_machina::BlockingCollectionStatus::Ok) {
 
     }

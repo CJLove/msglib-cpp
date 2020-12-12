@@ -5,7 +5,7 @@
 #include <time.h>
 
 namespace msglib {
-struct TimerManagerImpl;
+
 
 class TimerManager {
 public:
@@ -19,6 +19,7 @@ public:
     static void cancelTimer(const Label &label);
 
 private:
+    struct TimerManagerImpl;
     static std::unique_ptr<TimerManagerImpl> s_timerData;
 
 };

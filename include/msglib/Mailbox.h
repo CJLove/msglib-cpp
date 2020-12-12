@@ -28,7 +28,7 @@ public:
 struct Message {
 public:
     /**
-     * @brief Construct a new Message Base object
+     * @brief Construct a new Message object
      *
      */
     Message() = default;
