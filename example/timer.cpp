@@ -3,7 +3,8 @@
 #include "msglib/TimerManager.h"
 #include <iostream>
 #include <thread>
-#include <unistd.h>
+
+using namespace std::chrono_literals;
 
 msglib::Label RECURRING_TIMER = 1;
 const msglib::Label ONE_SHOT = 2;
@@ -12,6 +13,7 @@ const msglib::Label EXIT_THREAD = 4;
 
 void thread1(int inst)
 {
+    const int MAX_EVENTS = 10;
     msglib::Mailbox mbox;
     std::cout << "Thread " << inst << " registering for RECURRING_TIMER\n";
     mbox.RegisterForLabel(RECURRING_TIMER);
@@ -27,7 +29,7 @@ void thread1(int inst)
             ++count;
             std::cout << "Received RECURRING_TIMER event " << count << "\n";
 
-            if (count == 10) {
+            if (count == MAX_EVENTS) {
                 mbox.SendSignal(DONE);
             }
             mbox.ReleaseMessage(msg);
@@ -70,7 +72,7 @@ void thread2(int inst)
 
 }
 
-int main(int /* argc */, char /* **argv */)
+int main(int /* argc */, char ** /* argv */)
 {
     const time_t PERIOD = 750;  // msec
     const ulong MSEC_TO_NS = 1000000;
@@ -78,11 +80,12 @@ int main(int /* argc */, char /* **argv */)
     std::thread t1(thread1,1);
     std::thread t2(thread2,2);
 
+    // Start a recurring timer using a POSIX timespec
     timespec ts { 0, PERIOD * MSEC_TO_NS };
-    msglib::TimerManager::startTimer(RECURRING_TIMER, ts);
+    msglib::TimerManager::StartTimer(RECURRING_TIMER, ts, msglib::Timer::PERIODIC);
 
-    timespec ts2 { 0, PERIOD * MSEC_TO_NS };
-    msglib::TimerManager::startTimer(ONE_SHOT, ts2, msglib::TimerManager::ONE_SHOT);
+    // Start a one-shot timer using a std::chrono::duration value in msec (literal form)
+    msglib::TimerManager::StartTimer(ONE_SHOT, 900ms, msglib::Timer::ONE_SHOT);
 
     msglib::Mailbox mbox;
     mbox.RegisterForLabel(DONE);
@@ -91,7 +94,7 @@ int main(int /* argc */, char /* **argv */)
         mbox.Receive(msg);
         if (msg.m_label == DONE) {
             std::cout << "Cancelling RECURRING_TIMER\n";
-            msglib::TimerManager::cancelTimer(RECURRING_TIMER);
+            msglib::TimerManager::CancelTimer(RECURRING_TIMER);
             break;
         }
     }

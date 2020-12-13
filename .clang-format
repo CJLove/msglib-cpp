@@ -1,10 +1,11 @@
 ---
-# BasedOnStyle:  Google
+BasedOnStyle:  WebKit
 AccessModifierOffset: -4
 ConstructorInitializerIndentWidth: 4
 AlignEscapedNewlinesLeft: true
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
+# AllowShortBlocksOnASingleLine: SBS_Never
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: true
@@ -17,7 +18,7 @@ ColumnLimit:     128
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 DerivePointerBinding: true
 ExperimentalAutoDetectBinPacking: false
-IndentCaseLabels: true
+IndentCaseLabels: false
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
 ObjCSpaceBeforeProtocolList: false

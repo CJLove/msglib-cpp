@@ -1,7 +1,7 @@
 #include "msglib/Mailbox.h"
 #include <iostream>
 #include <thread>
-#include <unistd.h>
+
 
 struct Message1 {
     int a;
@@ -145,7 +145,7 @@ int main(int /* argc */, char** /* argv */)
     std::thread t2(thread2,2);
     std::thread t3(thread3,3);
 
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Main thread
     msglib::Mailbox mbox;
@@ -163,8 +163,7 @@ int main(int /* argc */, char** /* argv */)
 
     mbox.SendSignal(Msg5);
 
-    sleep(2);
-
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     // Send signal for all threads to exit
     mbox.SendSignal(Exit);
 

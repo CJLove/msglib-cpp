@@ -14,7 +14,9 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src
 )
 
-set ( msglibTests_SRC test_Pool.cpp
+set ( msglibTests_SRC 
+    test_Pool.cpp 
+    test_TimeConv.cpp
 )
 
 add_executable ( msglibTests ${msglibTests_SRC} )
