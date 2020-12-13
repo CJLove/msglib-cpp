@@ -59,6 +59,8 @@ public:
     DataBlockBase *m_data = nullptr;
 };
 
+class Mailbox;
+
 template <size_t msgSize>
 class DataBlock : public DataBlockBase {
 public:
@@ -93,7 +95,7 @@ private:
     char m_data[msgSize];
 };
 
-class Mailbox;
+
 
 /**
  * @brief Receivers is a struct holding up to X (default 3) receivers for a particular event label
@@ -311,6 +313,31 @@ private:
     static std::unique_ptr<MailboxData> s_mailboxData;
 
     code_machina::BlockingCollection<Message> m_queue;
+};
+
+/**
+ * @brief MessageGuard is an RAII-style wrapper class to reclaim resources associated with a Message
+ *        which has been received from a mailbox.
+ */
+class MessageGuard {
+public:
+    MessageGuard() = delete;
+
+    MessageGuard(Mailbox &mailbox, Message &msg): m_mailbox(mailbox), m_msg(msg)
+    {
+
+    }
+
+    ~MessageGuard()
+    {
+        if (m_msg.m_data != nullptr) {
+            m_mailbox.ReleaseMessage(m_msg);
+        }
+    }
+
+private:
+    Mailbox &m_mailbox;
+    Message &m_msg;
 };
 
 }  // Namespace msglib

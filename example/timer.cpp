@@ -5,16 +5,17 @@
 #include <thread>
 
 using namespace std::chrono_literals;
+using namespace msglib;
 
-msglib::Label RECURRING_TIMER = 1;
-const msglib::Label ONE_SHOT = 2;
-const msglib::Label DONE = 3;
-const msglib::Label EXIT_THREAD = 4;
+Label RECURRING_TIMER = 1;
+const Label ONE_SHOT = 2;
+const Label DONE = 3;
+const Label EXIT_THREAD = 4;
 
 void thread1(int inst)
 {
     const int MAX_EVENTS = 10;
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     std::cout << "Thread " << inst << " registering for RECURRING_TIMER\n";
     mbox.RegisterForLabel(RECURRING_TIMER);
     mbox.RegisterForLabel(EXIT_THREAD);
@@ -22,7 +23,7 @@ void thread1(int inst)
 
     while (true)
     {
-        msglib::Message msg;
+        Message msg;
 
         mbox.Receive(msg);
         if (msg.m_label == RECURRING_TIMER) {
@@ -45,7 +46,7 @@ void thread1(int inst)
 
 void thread2(int inst)
 {
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     std::cout << "Thread " << inst << " registering for ONE_SHOT\n";
     mbox.RegisterForLabel(ONE_SHOT);
     mbox.RegisterForLabel(EXIT_THREAD);
@@ -53,7 +54,7 @@ void thread2(int inst)
 
     while (true) 
     {
-        msglib::Message msg;
+        Message msg;
 
         mbox.Receive(msg);
         if (msg.m_label == ONE_SHOT) {
@@ -82,19 +83,20 @@ int main(int /* argc */, char ** /* argv */)
 
     // Start a recurring timer using a POSIX timespec
     timespec ts { 0, PERIOD * MSEC_TO_NS };
-    msglib::TimerManager::StartTimer(RECURRING_TIMER, ts, msglib::Timer::PERIODIC);
+    TimerManager::StartTimer(RECURRING_TIMER, ts, Timer::PERIODIC);
 
     // Start a one-shot timer using a std::chrono::duration value in msec (literal form)
-    msglib::TimerManager::StartTimer(ONE_SHOT, 900ms, msglib::Timer::ONE_SHOT);
+    TimerManager::StartTimer(ONE_SHOT, 900ms, Timer::ONE_SHOT);
 
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     mbox.RegisterForLabel(DONE);
     while (true) {
-        msglib::Message msg;
+        Message msg;
         mbox.Receive(msg);
+        MessageGuard guard(mbox,msg);
         if (msg.m_label == DONE) {
             std::cout << "Cancelling RECURRING_TIMER\n";
-            msglib::TimerManager::CancelTimer(RECURRING_TIMER);
+            TimerManager::CancelTimer(RECURRING_TIMER);
             break;
         }
     }

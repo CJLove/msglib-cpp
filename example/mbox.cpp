@@ -21,15 +21,17 @@ struct Message3 {
     int c;
 };
 
-// Labels used
-const msglib::Label Msg1 = 1;
-const msglib::Label Msg2 = 2;
-const msglib::Label Msg3 = 3;
-const msglib::Label Msg4 = 4;
-const msglib::Label Msg5 = 5;
-const msglib::Label Exit = 999;
+using namespace msglib;
 
-void displayMsg(const char *thread, msglib::Message &msg)
+// Labels used
+const Label Msg1 = 1;
+const Label Msg2 = 2;
+const Label Msg3 = 3;
+const Label Msg4 = 4;
+const Label Msg5 = 5;
+const Label Exit = 999;
+
+void displayMsg(const char *thread, Message &msg)
 {
     switch (msg.m_label)
     {
@@ -70,22 +72,21 @@ void displayMsg(const char *thread, msglib::Message &msg)
 
 void thread1(int inst)
 {
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 1 & 2\n";
     mbox.RegisterForLabel(Msg1);
     mbox.RegisterForLabel(Msg2);
     mbox.RegisterForLabel(Exit);
     while (true)
     {
-        msglib::Message msg;
+        Message msg;
 
         mbox.Receive(msg);
+        MessageGuard guard(mbox,msg);
         displayMsg("Thread1",msg);
         if (msg.m_label == Exit) {
-            mbox.ReleaseMessage(msg);
             break;
         }
-        mbox.ReleaseMessage(msg);
     }
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg2);
@@ -94,21 +95,20 @@ void thread1(int inst)
 
 void thread2(int inst)
 {
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 1 & 3\n";
     mbox.RegisterForLabel(Msg1);
     mbox.RegisterForLabel(Msg3);
     mbox.RegisterForLabel(Exit);
     while (true)
     {
-        msglib::Message msg;
+        Message msg;
         mbox.Receive(msg);
+        MessageGuard guard(mbox,msg);
         displayMsg("Thread2",msg);
         if (msg.m_label == Exit) {
-            mbox.ReleaseMessage(msg);
             break;
         }        
-        mbox.ReleaseMessage(msg);
     }
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg3);
@@ -117,22 +117,21 @@ void thread2(int inst)
 
 void thread3(int inst)
 {
-    msglib::Mailbox mbox;
+    Mailbox mbox;
     std::cout << "Thread " << inst << " registering for labels 4 & 5\n";
     mbox.RegisterForLabel(Msg4);
     mbox.RegisterForLabel(Msg5);
     mbox.RegisterForLabel(Exit);
     while (true)
     {
-        msglib::Message msg;
+        Message msg;
 
         mbox.Receive(msg);
+        MessageGuard guard(mbox,msg);
         displayMsg("Thread3",msg);
         if (msg.m_label == Exit) {
-            mbox.ReleaseMessage(msg);
             break;
         }        
-        mbox.ReleaseMessage(msg);
     }
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg3);
@@ -148,7 +147,7 @@ int main(int /* argc */, char** /* argv */)
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Main thread
-    msglib::Mailbox mbox;
+    Mailbox mbox;
 
     Message3 msg3 { 1,2,3 };
     mbox.SendMessage(Msg3,msg3);
