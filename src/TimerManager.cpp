@@ -1,7 +1,7 @@
 #include "msglib/TimerManager.h"
 #include "msglib/Mailbox.h"
 
-using namespace msglib;
+namespace msglib {
 
 Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m_mailbox(mailbox), m_label(label) {
     m_sa.sa_flags = SA_SIGINFO;
@@ -85,3 +85,5 @@ void TimerManager::StartTimer(const Label &label, const std::chrono::time_point<
 void TimerManager::CancelTimer(const Label &label) { 
     s_timerData->cancelTimer(label); 
 }
+
+}   // Namespace msglib

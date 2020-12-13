@@ -20,47 +20,20 @@ static const Label SMALL_SIZE = 256;
 static const Label LARGE_CAP = 200;
 static const Label SMALL_CAP = 200;
 
+/**
+ * @brief DataBlockBase provides a common interface for all instantiations of the DataBlock template class
+ * 
+ */
 class DataBlockBase {
 public:
     virtual void *get() = 0;
 };
 
-struct Message {
-public:
-    /**
-     * @brief Construct a new Message object
-     *
-     */
-    Message() = default;
-
-    Message(Label label) : m_label(label), m_size(0), m_data(nullptr) {}
-
-    Message(Label label, uint16_t size, DataBlockBase *data) : m_label(label), m_size(size), m_data(data) {}
-
-    /**
-     * @brief Convert this Message instance to an object of type T
-     *
-     * @tparam T - a POD type
-     * @return T - result of the conversion
-     */
-    template <typename T>
-    T *as() {
-        if (m_data != nullptr && sizeof(T) == m_size && std::is_trivial<T>()) {
-            // T result;
-            // memcpy(&result,m_data->get(),sizeof(T));
-            // return result;
-            return reinterpret_cast<T *>(m_data->get());
-        }
-        return nullptr;
-    }
-
-    Label m_label = 0;
-    uint16_t m_size = 0;
-    DataBlockBase *m_data = nullptr;
-};
-
-class Mailbox;
-
+/**
+ * @brief DataBlock is a template class providing a class capable of storing any message struct up to a specific size.
+ * 
+ * @tparam msgSize 
+ */
 template <size_t msgSize>
 class DataBlock : public DataBlockBase {
 public:
@@ -95,7 +68,49 @@ private:
     char m_data[msgSize];
 };
 
+/**
+ * @brief Message is a representation of any message sent or received via a mailbox.
+ * 
+ */
+struct Message {
+public:
+    /**
+     * @brief Construct a new Message object
+     *
+     */
+    Message() = default;
 
+    Message(Label label) : m_label(label), m_size(0), m_data(nullptr) { }
+
+    Message(Label label, uint16_t size, DataBlockBase *data) : m_label(label), m_size(size), m_data(data) { }
+
+    /**
+     * @brief Convert this Message instance to an object of type T
+     *
+     * @tparam T - a POD type
+     * @return T - result of the conversion
+     */
+    template <typename T>
+    T *as() {
+        if (m_data != nullptr && sizeof(T) == m_size && std::is_trivial<T>()) {
+            // T result;
+            // memcpy(&result,m_data->get(),sizeof(T));
+            // return result;
+            return reinterpret_cast<T *>(m_data->get());
+        }
+        return nullptr;
+    }
+
+    Label m_label = 0;
+    uint16_t m_size = 0;
+    DataBlockBase *m_data = nullptr;
+};
+
+/**
+ * @brief Forward declaration of Mailbox class
+ * 
+ */
+class Mailbox;
 
 /**
  * @brief Receivers is a struct holding up to X (default 3) receivers for a particular event label
@@ -160,23 +175,18 @@ struct Receivers {
     }
 };
 
-struct MailboxData {
+/**
+ * @brief MailboxData represents data shared among all mailbox instances.
+ * 
+ */
+class MailboxData {
+public:
+
     using Mailboxes = std::unordered_map<Label, Receivers>;
     using SmallBlock = DataBlock<SMALL_SIZE>;
     using LargeBlock = DataBlock<LARGE_SIZE>;
 
-    /**
-     * @brief State information for mailbox registration
-     *
-     */
-    std::mutex m_mutex;
-    Mailboxes m_mailboxes;
-
-    Pool<SmallBlock> m_smallPool;
-    Pool<LargeBlock> m_largePool;
-    Receivers m_receivers;
-
-    MailboxData() : m_smallPool(SMALL_CAP), m_largePool(LARGE_CAP) {}
+    MailboxData() : m_smallPool(SMALL_CAP), m_largePool(LARGE_CAP) { }
 
     /**
      * @brief Register a Mailbox instance as a receiver for a particular label
@@ -213,6 +223,19 @@ struct MailboxData {
     LargeBlock *getLarge();
 
     void freeLarge(LargeBlock *msg);
+
+private:
+    /**
+     * @brief State information for mailbox registration
+     *
+     */
+    std::mutex m_mutex;
+    Mailboxes m_mailboxes;
+
+    Pool<SmallBlock> m_smallPool;
+    Pool<LargeBlock> m_largePool;
+    Receivers m_receivers;
+
 };
 
 class Mailbox {
@@ -323,13 +346,9 @@ class MessageGuard {
 public:
     MessageGuard() = delete;
 
-    MessageGuard(Mailbox &mailbox, Message &msg): m_mailbox(mailbox), m_msg(msg)
-    {
+    MessageGuard(Mailbox &mailbox, Message &msg) : m_mailbox(mailbox), m_msg(msg) { }
 
-    }
-
-    ~MessageGuard()
-    {
+    ~MessageGuard() {
         if (m_msg.m_data != nullptr) {
             m_mailbox.ReleaseMessage(m_msg);
         }
