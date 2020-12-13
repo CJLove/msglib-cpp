@@ -98,6 +98,14 @@ public:
     }
 
     /**
+     * @brief Start a one-shot timer resulting in the specified label being signalled at a specific time
+     * 
+     * @param label - label to use for this timer
+     * @param time - time expressed as a std::chrono::time_point
+     */
+    static void StartTimer(const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time);
+
+    /**
      * @brief Cancel a one-shot timer for the specified label
      * 
      * @param label - timer to be cancelled
