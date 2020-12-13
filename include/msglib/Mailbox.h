@@ -22,7 +22,6 @@ static const Label SMALL_CAP = 200;
 
 /**
  * @brief DataBlockBase provides a common interface for all instantiations of the DataBlock template class
- * 
  */
 class DataBlockBase {
 public:
@@ -30,7 +29,7 @@ public:
 };
 
 /**
- * @brief DataBlock is a template class providing a class capable of storing any message struct up to a specific size.
+ * @brief DataBlock is a templated class providing a class capable of storing any message struct up to a specific size.
  * 
  * @tparam msgSize 
  */
@@ -70,25 +69,35 @@ private:
 
 /**
  * @brief Message is a representation of any message sent or received via a mailbox.
- * 
  */
 struct Message {
 public:
     /**
      * @brief Construct a new Message object
-     *
      */
     Message() = default;
 
+    /**
+     * @brief Construct a new Message object with a specific label and no data
+     * 
+     * @param label - message's label
+     */
     Message(Label label) : m_label(label), m_size(0), m_data(nullptr) { }
 
+    /**
+     * @brief Construct a new Message object with a specific label and amount of message data
+     * 
+     * @param label - message's label
+     * @param size - message's size
+     * @param data - message's data
+     */
     Message(Label label, uint16_t size, DataBlockBase *data) : m_label(label), m_size(size), m_data(data) { }
 
     /**
-     * @brief Convert this Message instance to an object of type T
+     * @brief Return this message instance's data as a pointer to an object of type T
      *
      * @tparam T - a POD type
-     * @return T - result of the conversion
+     * @return T - result of the conversion, or nullptr for a size mismatch or invalid type
      */
     template <typename T>
     T *as() {
@@ -108,20 +117,17 @@ public:
 
 /**
  * @brief Forward declaration of Mailbox class
- * 
  */
 class Mailbox;
 
 /**
- * @brief Receivers is a struct holding up to X (default 3) receivers for a particular event label
- *
+ * @brief Receivers is a struct holding up to X (default 3) mailbox receivers for a particular event label
  */
 struct Receivers {
     std::vector<Mailbox *> m_receivers;
 
     /**
      * @brief Construct a new Receivers object
-     *
      */
     Receivers() {
         m_receivers.resize(3);
@@ -177,12 +183,9 @@ struct Receivers {
 
 /**
  * @brief MailboxData represents data shared among all mailbox instances.
- * 
  */
 class MailboxData {
 public:
-
-    using Mailboxes = std::unordered_map<Label, Receivers>;
     using SmallBlock = DataBlock<SMALL_SIZE>;
     using LargeBlock = DataBlock<LARGE_SIZE>;
 
@@ -190,16 +193,19 @@ public:
 
     /**
      * @brief Register a Mailbox instance as a receiver for a particular label
-     *
      */
     void RegisterForLabel(Label, Mailbox *);
 
     /**
      * @brief Unregister a Mailbox instance as a receiver for a particular label
-     *
      */
     void UnregisterForLabel(Label, Mailbox *);
 
+    /**
+     * @brief Get the registered receivers for the specified label
+     * 
+     * @return Receivers& 
+     */
     Receivers &GetReceivers(Label);
 
     /**
@@ -222,45 +228,56 @@ public:
      */
     LargeBlock *getLarge();
 
+    /**
+     * @brief Free a large message block
+     * 
+     * @param msg - msg to be freed
+     */
     void freeLarge(LargeBlock *msg);
 
 private:
+    using Mailboxes = std::unordered_map<Label, Receivers>;
+
     /**
      * @brief State information for mailbox registration
-     *
      */
     std::mutex m_mutex;
     Mailboxes m_mailboxes;
 
+    /**
+     * @brief Pools of small and large message blocks
+     */
     Pool<SmallBlock> m_smallPool;
     Pool<LargeBlock> m_largePool;
-    Receivers m_receivers;
 
+    /**
+     * @brief Empty set of receivers, used for unknown labels
+     */
+    Receivers m_receivers;
 };
 
+/**
+ * @brief Mailbox provides interfaces for sending and receiving messages to one or more subscribers
+ */
 class Mailbox {
 public:
     /**
      * @brief Construct a new Mailbox object
-     *
      */
     Mailbox();
 
     /**
      * @brief Disable copy construction
-     *
      */
     Mailbox(const Mailbox &) = delete;
 
     /**
      * @brief Disable move construction
-     *
      */
     Mailbox(Mailbox &&) = delete;
 
     /**
      * @brief Destroy the Mailbox object
-     *
      */
     ~Mailbox();
 
@@ -278,6 +295,9 @@ public:
      */
     void UnregisterForLabel(Label label);
 
+    /**
+     * @brief Release the data block associated with a message
+     */
     void ReleaseMessage(Message &);
 
     /**
@@ -318,7 +338,7 @@ public:
     /**
      * @brief Send a signal with a specific label
      *
-     * @param label - signal label
+     * @param label - signal's label
      */
     void SendSignal(Label label);
 
@@ -332,9 +352,14 @@ public:
     void Receive(Message &msg);
 
 private:
-    // Static mailbox state
+    /**
+     * @brief Shared mailbox state among all Mailbox instances
+     */
     static std::unique_ptr<MailboxData> s_mailboxData;
 
+    /**
+     * @brief Queue for this instance of the Mailbox class
+     */
     code_machina::BlockingCollection<Message> m_queue;
 };
 
@@ -344,10 +369,23 @@ private:
  */
 class MessageGuard {
 public:
+    /**
+     * Disable default construction
+     */
     MessageGuard() = delete;
 
+    /**
+     * @brief Construct a new MessageGuard object for a specific mailbox and message
+     * 
+     * @param mailbox 
+     * @param msg 
+     */
     MessageGuard(Mailbox &mailbox, Message &msg) : m_mailbox(mailbox), m_msg(msg) { }
 
+    /**
+     * @brief Free any datablock associated with this message
+     * 
+     */
     ~MessageGuard() {
         if (m_msg.m_data != nullptr) {
             m_mailbox.ReleaseMessage(m_msg);
@@ -355,6 +393,9 @@ public:
     }
 
 private:
+    /**
+     * @brief References to the specific mailbox and message
+     */
     Mailbox &m_mailbox;
     Message &m_msg;
 };
