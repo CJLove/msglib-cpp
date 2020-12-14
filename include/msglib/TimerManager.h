@@ -36,6 +36,7 @@ private:
     Mailbox &m_mailbox;
     Label m_label = 0;
     timer_t m_timer = nullptr;
+    TimerType_e m_type = ONE_SHOT;
     struct sigevent m_sev {};
     struct sigaction m_sa {};
     struct itimerspec m_spec {};

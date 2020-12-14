@@ -3,7 +3,7 @@
 
 namespace msglib {
 
-Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m_mailbox(mailbox), m_label(label) {
+Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m_mailbox(mailbox), m_label(label), m_type(type) {
     m_sa.sa_flags = SA_SIGINFO;
     m_sa.sa_sigaction = handler;
     sigemptyset(&m_sa.sa_mask);
@@ -41,6 +41,9 @@ void Timer::cancel() {
 
 void Timer::timerEvent() {
     m_mailbox.SendSignal(m_label);
+    if (m_type == ONE_SHOT) {
+        TimerManager::CancelTimer(m_label);
+    }
 }
 
 void Timer::handler(int, siginfo_t *si, void * /* uc */) {

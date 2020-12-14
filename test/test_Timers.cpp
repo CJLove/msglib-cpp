@@ -22,6 +22,7 @@ void EventTestThread(EventTester &tester) {
     Message msg;
     mbox.Receive(msg);
     MessageGuard guard(mbox, msg);
+    std::cout << "Received " << msg.m_label << "\n";
 
     tester.received = (msg.m_label == OneShotEvent);
     mbox.UnregisterForLabel(OneShotEvent);
@@ -46,7 +47,6 @@ void RecurringEventTestThread(EventTester &tester) {
     mbox.UnregisterForLabel(PeriodicEvent);
 }
 
-#if 1
 TEST(TimerManager, OneShotPOSIX) {
     timespec ts {0, 500000000};
     EventTester tester;
@@ -60,17 +60,32 @@ TEST(TimerManager, OneShotPOSIX) {
     evt.join();
     EXPECT_TRUE(tester.received);
 }
-#endif
 
-#if 1
 TEST(TimerManager, OneShotChrono) {
     EventTester tester;
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(PeriodicEvent, 500ms, Timer::ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, 500ms, Timer::ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
+
+    evt.join();
+    EXPECT_TRUE(tester.received);
+}
+
+#if 0
+TEST(TimerManager, OneShotTimePoint) {
+    EventTester tester;
+
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::time_point_cast<std::chrono::nanoseconds> (now + 1s);
+
+    std::thread evt(EventTestThread, std::ref(tester));
+
+    TimerManager::StartTimer(OneShotEvent, time, Timer::ONE_SHOT);
+
+    std::this_thread::sleep_for(2s);
 
     evt.join();
     EXPECT_TRUE(tester.received);
