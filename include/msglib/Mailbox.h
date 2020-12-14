@@ -125,12 +125,13 @@ class Mailbox;
  */
 struct Receivers {
     std::vector<Mailbox *> m_receivers;
+    const int MAX_RECEIVERS = 3;
 
     /**
      * @brief Construct a new Receivers object
      */
     Receivers() {
-        m_receivers.resize(3);
+        m_receivers.resize(MAX_RECEIVERS);
         m_receivers[0] = m_receivers[1] = m_receivers[2] = nullptr;
     }
 
@@ -140,8 +141,16 @@ struct Receivers {
      * @param mbox - first receiver
      */
     Receivers(Mailbox *mbox) {
-        m_receivers.resize(3);
+        m_receivers.resize(MAX_RECEIVERS);
         m_receivers[0] = mbox;
+        m_receivers[1] = m_receivers[2] = nullptr;
+    }
+
+    Receivers &operator=(const Receivers &rhs) {
+        if (&rhs != this) {
+            m_receivers = rhs.m_receivers;
+        }
+        return *this;
     }
 
     /**
@@ -170,12 +179,12 @@ struct Receivers {
      */
     bool remove(Mailbox *mbox) {
         bool remove = true;
-        for (auto &r : m_receivers) {
-            if (r == mbox) {
-                r = nullptr;
+        for (int i = 0; i < MAX_RECEIVERS; i++) {
+            if (m_receivers[i] == mbox) {
+                m_receivers[i] = nullptr;
             }
             // If no mailboxes remain for this label then it should be removed
-            remove &= (r == nullptr);
+            remove &= (m_receivers[i] == nullptr);
         }
         return remove;
     }

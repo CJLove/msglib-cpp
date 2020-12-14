@@ -25,7 +25,7 @@ void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
     std::unordered_map<Label, Receivers>::iterator f = m_mailboxes.find(label);
     if (f != m_mailboxes.end()) {
-        if (!f->second.remove(mbox)) {
+        if (f->second.remove(mbox)) {
             m_mailboxes.erase(f);
         }
     }
@@ -40,10 +40,25 @@ Receivers &MailboxData::GetReceivers(Label label) {
     return m_receivers;
 }
 
-MailboxData::SmallBlock *MailboxData::getSmall() { return m_smallPool.alloc(); }
+MailboxData::SmallBlock *MailboxData::getSmall() { 
+    try {
+        return m_smallPool.alloc(); 
+    }
+    catch (std::exception &) {
+        return nullptr;
+    }
+}
+
 void MailboxData::freeSmall(MailboxData::SmallBlock *msg) { m_smallPool.free(msg); }
 
-MailboxData::LargeBlock *MailboxData::getLarge() { return m_largePool.alloc(); }
+MailboxData::LargeBlock *MailboxData::getLarge() { 
+    try {
+        return m_largePool.alloc(); 
+    }
+    catch (std::exception &) {
+        return nullptr;
+    }
+}
 
 void MailboxData::freeLarge(MailboxData::LargeBlock *msg) { m_largePool.free(msg); }
 

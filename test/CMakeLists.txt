@@ -7,6 +7,10 @@ enable_testing()
 # Disable clang-tidy checks for unit test code
 set(CMAKE_CXX_CLANG_TIDY "")
 
+if (BUILD_COVERAGE)
+    add_definitions( --coverage )
+endif (BUILD_COVERAGE)
+
 include_directories( 
     .
     ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}
@@ -17,6 +21,8 @@ include_directories(
 set ( msglibTests_SRC 
     test_Pool.cpp 
     test_TimeConv.cpp
+    test_Mailbox.cpp
+    test_Timers.cpp
 )
 
 add_executable ( msglibTests ${msglibTests_SRC} )
@@ -25,5 +31,9 @@ add_executable ( msglibTests ${msglibTests_SRC} )
 target_link_libraries( msglibTests gtest gtest_main )
 
 target_link_libraries( msglibTests msglib-cpp )
+
+if (BUILD_COVERAGE)
+    target_link_libraries( msglibTests gcov )
+endif (BUILD_COVERAGE)
 
 add_test (msglibTests msglibTests )
