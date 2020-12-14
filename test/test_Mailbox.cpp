@@ -9,10 +9,12 @@ struct MsgStruct {
 };
 
 struct MsgBad {
-    MsgBad(int b) : m_b(b) { }
+    MsgBad(int b) : m_b(b) {
+    }
     int m_b;
 
-    virtual void virtMethod() { }
+    virtual void virtMethod() {
+    }
 };
 
 TEST(MailboxText, DataBlock) {
@@ -199,7 +201,7 @@ TEST(MailboxTest, MailboxDataRegister) {
         auto &receivers = data.GetReceivers(label);
         EXPECT_EQ(nullptr, receivers.m_receivers[0]);
         EXPECT_EQ(nullptr, receivers.m_receivers[1]);
-        EXPECT_EQ(nullptr, receivers.m_receivers[2]);       
+        EXPECT_EQ(nullptr, receivers.m_receivers[2]);
     }
 }
 
@@ -209,8 +211,7 @@ struct TestMessage {
     int c;
 };
 
-TEST(MailboxTest, MailboxTest)
-{
+TEST(MailboxTest, MailboxTest) {
     Label Msg1 = 555;
     Label Msg2 = 666;
     Label Msg3 = 777;
@@ -224,58 +225,56 @@ TEST(MailboxTest, MailboxTest)
     mbox2.RegisterForLabel(Msg2);
     mbox2.RegisterForLabel(Msg3);
 
-    TestMessage m1 { 3,2,1 };
-    mbox3.SendMessage(Msg1,m1);
+    TestMessage m1 {3, 2, 1};
+    mbox3.SendMessage(Msg1, m1);
 
     {
         Message msg;
         mbox1.Receive(msg);
-        MessageGuard guard(mbox1,msg);
+        MessageGuard guard(mbox1, msg);
 
         EXPECT_EQ(Msg1, msg.m_label);
         auto m1Ptr = msg.as<TestMessage>();
-        EXPECT_EQ(3,m1Ptr->a);
-        EXPECT_EQ(2,m1Ptr->b);
-        EXPECT_EQ(1,m1Ptr->c);
+        EXPECT_EQ(3, m1Ptr->a);
+        EXPECT_EQ(2, m1Ptr->b);
+        EXPECT_EQ(1, m1Ptr->c);
     }
 
-    mbox3.SendMessage(Msg2,m1);
+    mbox3.SendMessage(Msg2, m1);
     {
         Message msg;
         mbox1.Receive(msg);
-        MessageGuard guard(mbox1,msg);
+        MessageGuard guard(mbox1, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
         auto m1Ptr = msg.as<TestMessage>();
-        EXPECT_EQ(3,m1Ptr->a);
-        EXPECT_EQ(2,m1Ptr->b);
-        EXPECT_EQ(1,m1Ptr->c);
+        EXPECT_EQ(3, m1Ptr->a);
+        EXPECT_EQ(2, m1Ptr->b);
+        EXPECT_EQ(1, m1Ptr->c);
     }
     {
         Message msg;
         mbox2.Receive(msg);
-        MessageGuard guard(mbox2,msg);
+        MessageGuard guard(mbox2, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
         auto m1Ptr = msg.as<TestMessage>();
-        EXPECT_EQ(3,m1Ptr->a);
-        EXPECT_EQ(2,m1Ptr->b);
-        EXPECT_EQ(1,m1Ptr->c);
+        EXPECT_EQ(3, m1Ptr->a);
+        EXPECT_EQ(2, m1Ptr->b);
+        EXPECT_EQ(1, m1Ptr->c);
     }
 
     mbox3.SendSignal(Msg3);
     {
         Message msg;
         mbox2.Receive(msg);
-        MessageGuard guard(mbox2,msg);
+        MessageGuard guard(mbox2, msg);
 
         EXPECT_EQ(Msg3, msg.m_label);
     }
-
 
     mbox1.UnregisterForLabel(Msg1);
     mbox1.UnregisterForLabel(Msg2);
     mbox2.UnregisterForLabel(Msg2);
     mbox2.UnregisterForLabel(Msg3);
 }
-    
