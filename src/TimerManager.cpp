@@ -3,8 +3,42 @@
 
 namespace msglib {
 
+/**
+ * @brief Timer is a representation of a timer which has been scheduled within the TimerManager
+ *
+ */
+class Timer {
+public:
+    Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type);
 
-Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m_mailbox(mailbox), m_label(label), m_type(type) {
+    void cancel() {
+        itimerspec itsnew {};
+        itsnew.it_value.tv_sec = itsnew.it_value.tv_nsec = 0;
+        itsnew.it_interval.tv_sec = itsnew.it_interval.tv_nsec = 0;
+        timer_settime(m_timer, 0, &itsnew, &m_spec);
+    }
+
+    void timerEvent() {
+        m_mailbox.SendSignal(m_label);
+        if (m_type == ONE_SHOT) {
+            TimerManager::CancelTimer(m_label);
+        }
+    }
+
+private:
+    Mailbox &m_mailbox;
+    Label m_label = 0;
+    timer_t m_timer = nullptr;
+    TimerType_e m_type = ONE_SHOT;
+    struct sigevent m_sev { };
+    struct sigaction m_sa { };
+    struct itimerspec m_spec { };
+
+    static void handler(int /* sig */, siginfo_t *si, void * /* uc */);
+};
+
+Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type)
+    : m_mailbox(mailbox), m_label(label), m_type(type) {
     m_sa.sa_flags = SA_SIGINFO;
     m_sa.sa_sigaction = handler;
     sigemptyset(&m_sa.sa_mask);
@@ -33,38 +67,36 @@ Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m
     }
 }
 
-void Timer::cancel() {
-    itimerspec itsnew {};
-    itsnew.it_value.tv_sec = itsnew.it_value.tv_nsec = 0;
-    itsnew.it_interval.tv_sec = itsnew.it_interval.tv_nsec = 0;
-    timer_settime(m_timer, 0, &itsnew, &m_spec);
-}
-
-void Timer::timerEvent() {
-    m_mailbox.SendSignal(m_label);
-    if (m_type == ONE_SHOT) {
-        TimerManager::CancelTimer(m_label);
-    }
-}
-
 void Timer::handler(int, siginfo_t *si, void * /* uc */) {
     (reinterpret_cast<Timer *>(si->si_value.sival_ptr))->timerEvent();
 }
 
+struct TimerManagerData::TimerManagerDataImpl {
+
+    using TimerMap = std::unordered_map<Label, Timer>;
+
+    Mailbox m_mailbox;
+    TimerMap m_timers;
+    std::mutex m_mutex;
+};
+
+TimerManagerData::TimerManagerData() : m_pImpl(std::make_unique<TimerManagerData::TimerManagerDataImpl>()) {
+}
+
 void TimerManagerData::startTimer(const Label &label, const timespec &time, const TimerType_e type) {
-    std::lock_guard<std::mutex> guard(m_mutex);
-    if (m_timers.find(label) == m_timers.end()) {
-        m_timers.emplace(
-            std::piecewise_construct, std::forward_as_tuple(label), std::forward_as_tuple(m_mailbox, label, time, type));
+    std::lock_guard<std::mutex> guard(m_pImpl->m_mutex);
+    if (m_pImpl->m_timers.find(label) == m_pImpl->m_timers.end()) {
+        m_pImpl->m_timers.emplace(std::piecewise_construct, std::forward_as_tuple(label),
+            std::forward_as_tuple(m_pImpl->m_mailbox, label, time, type));
     }
 }
 
 void TimerManagerData::cancelTimer(const Label &label) {
-    std::lock_guard<std::mutex> guard(m_mutex);
-    auto timer = m_timers.find(label);
-    if (timer != m_timers.end()) {
+    std::lock_guard<std::mutex> guard(m_pImpl->m_mutex);
+    auto timer = m_pImpl->m_timers.find(label);
+    if (timer != m_pImpl->m_timers.end()) {
         timer->second.cancel();
-        m_timers.erase(label);
+        m_pImpl->m_timers.erase(label);
     }
 }
 
