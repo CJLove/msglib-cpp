@@ -53,7 +53,7 @@ TEST(TimerManager, OneShotPOSIX) {
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(OneShotEvent, ts, Timer::ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, ts, ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
 
@@ -66,7 +66,7 @@ TEST(TimerManager, OneShotChrono) {
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(OneShotEvent, 500ms, Timer::ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, 500ms, ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
 
@@ -101,7 +101,7 @@ TEST(TimerManager, RecurringPOSIX) {
 
     std::thread evt(RecurringEventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(PeriodicEvent, ts, Timer::PERIODIC);
+    TimerManager::StartTimer(PeriodicEvent, ts, PERIODIC);
 
     std::this_thread::sleep_for(2s);
     TimerManager::CancelTimer(PeriodicEvent);

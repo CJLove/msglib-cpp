@@ -7,8 +7,8 @@
 using namespace std::chrono_literals;
 using namespace msglib;
 
-Label RECURRING_TIMER = 1;
-const Label ONE_SHOT = 2;
+const Label RECURRING_TIMER = 1;
+const Label ONE_SHOT_TIMER = 2;
 const Label DONE = 3;
 const Label EXIT_THREAD = 4;
 
@@ -48,7 +48,7 @@ void thread2(int inst)
 {
     Mailbox mbox;
     std::cout << "Thread " << inst << " registering for ONE_SHOT\n";
-    mbox.RegisterForLabel(ONE_SHOT);
+    mbox.RegisterForLabel(ONE_SHOT_TIMER);
     mbox.RegisterForLabel(EXIT_THREAD);
     unsigned count = 0;
 
@@ -57,7 +57,7 @@ void thread2(int inst)
         Message msg;
 
         mbox.Receive(msg);
-        if (msg.m_label == ONE_SHOT) {
+        if (msg.m_label == ONE_SHOT_TIMER) {
             count++;
             std::cout << "Received ONE_SHOT event " << count << "\n";
             mbox.ReleaseMessage(msg);
@@ -68,7 +68,7 @@ void thread2(int inst)
             break;
         }
     }
-    mbox.UnregisterForLabel(ONE_SHOT);
+    mbox.UnregisterForLabel(ONE_SHOT_TIMER);
     mbox.UnregisterForLabel(EXIT_THREAD);
 
 }
@@ -83,10 +83,10 @@ int main(int /* argc */, char ** /* argv */)
 
     // Start a recurring timer using a POSIX timespec
     timespec ts { 0, PERIOD * MSEC_TO_NS };
-    TimerManager::StartTimer(RECURRING_TIMER, ts, Timer::PERIODIC);
+    TimerManager::StartTimer(RECURRING_TIMER, ts, PERIODIC);
 
     // Start a one-shot timer using a std::chrono::duration value in msec (literal form)
-    TimerManager::StartTimer(ONE_SHOT, 900ms, Timer::ONE_SHOT);
+    TimerManager::StartTimer(ONE_SHOT, 900ms, ONE_SHOT);
 
     Mailbox mbox;
     mbox.RegisterForLabel(DONE);

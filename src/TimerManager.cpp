@@ -3,6 +3,7 @@
 
 namespace msglib {
 
+
 Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type) : m_mailbox(mailbox), m_label(label), m_type(type) {
     m_sa.sa_flags = SA_SIGINFO;
     m_sa.sa_sigaction = handler;
@@ -50,7 +51,7 @@ void Timer::handler(int, siginfo_t *si, void * /* uc */) {
     (reinterpret_cast<Timer *>(si->si_value.sival_ptr))->timerEvent();
 }
 
-void TimerManagerData::startTimer(const Label &label, const timespec &time, const Timer::TimerType_e type) {
+void TimerManagerData::startTimer(const Label &label, const timespec &time, const TimerType_e type) {
     std::lock_guard<std::mutex> guard(m_mutex);
     if (m_timers.find(label) == m_timers.end()) {
         m_timers.emplace(
@@ -73,7 +74,7 @@ void TimerManagerData::cancelTimer(const Label &label) {
  */
 std::unique_ptr<TimerManagerData> TimerManager::s_timerData = std::make_unique<TimerManagerData>();
 
-void TimerManager::StartTimer(const Label &label, const timespec &time, const Timer::TimerType_e type) {
+void TimerManager::StartTimer(const Label &label, const timespec &time, const TimerType_e type) {
     s_timerData->startTimer(label, time, type);
 }
 
@@ -83,7 +84,7 @@ void TimerManager::StartTimer(
     auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
         std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
 
-    s_timerData->startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, Timer::ONE_SHOT);
+    s_timerData->startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
 }
 
 void TimerManager::CancelTimer(const Label &label) {

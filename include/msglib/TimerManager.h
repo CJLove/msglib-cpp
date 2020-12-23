@@ -11,12 +11,6 @@
 
 namespace msglib {
 
-/**
- * @brief Timer is a representation of a timer which has been scheduled within the TimerManager
- * 
- */
-class Timer {
-public:
     /**
      * @brief Types of timers
      * 
@@ -25,6 +19,13 @@ public:
         PERIODIC,
         ONE_SHOT
     };
+
+/**
+ * @brief Timer is a representation of a timer which has been scheduled within the TimerManager
+ * 
+ */
+class Timer {
+public:
 
     Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type);
 
@@ -53,7 +54,7 @@ public:
 
     TimerManagerData() = default;
 
-    void startTimer(const Label &label, const timespec &time, const Timer::TimerType_e type);
+    void startTimer(const Label &label, const timespec &time, const TimerType_e type);
 
     void cancelTimer(const Label &label);
 
@@ -80,7 +81,7 @@ public:
      * @param time - time specification of when the timer should fire as POSIX timespec
      * @param type - type of timer to create (default is one-shot)
      */
-    static void StartTimer(const Label &label, const timespec &time, const Timer::TimerType_e type = Timer::ONE_SHOT);
+    static void StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT);
 
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
@@ -92,7 +93,7 @@ public:
      * @param type - type of timer to create (default is one-shot)
      */
     template< class T, class P>
-    static void StartTimer(const Label &label, const std::chrono::duration<T,P> time, const Timer::TimerType_e type = Timer::ONE_SHOT)
+    static void StartTimer(const Label &label, const std::chrono::duration<T,P> time, const TimerType_e type = ONE_SHOT)
     {
         auto ts = Chrono2Timespec(time);
         s_timerData->startTimer(label, ts, type);
