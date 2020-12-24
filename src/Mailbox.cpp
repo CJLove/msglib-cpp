@@ -71,10 +71,7 @@ void Mailbox::RegisterForLabel(Label label) { s_mailboxData->RegisterForLabel(la
 void Mailbox::UnregisterForLabel(Label label) { s_mailboxData->UnregisterForLabel(label, this); }
 
 void Mailbox::Receive(Message &msg) {
-    auto status = m_queue.take(msg);
-
-    // TBD:
-    if (status == code_machina::BlockingCollectionStatus::Ok) { }
+    m_queue.pop(msg);
 }
 
 void Mailbox::ReleaseMessage(Message &msg) {
@@ -88,7 +85,7 @@ void Mailbox::ReleaseMessage(Message &msg) {
 }
 
 void Mailbox::SendSignal(Label label) {
-    const auto receivers = s_mailboxData->GetReceivers(label);
+    const auto &receivers = s_mailboxData->GetReceivers(label);
     for (const auto &receiver : receivers.m_receivers) {
         if (receiver == nullptr)
             break;

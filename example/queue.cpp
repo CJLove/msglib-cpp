@@ -2,6 +2,11 @@
 #include <thread>
 #include <chrono>
 
+using namespace msglib;
+using namespace std::chrono_literals;
+
+// Sample code using the Queue template class
+
 struct Msg {
     int m_a;
     int m_b;
@@ -13,8 +18,7 @@ struct Msg {
     {}
 };
 
-using namespace msglib;
-using namespace std::chrono_literals;
+
 
 void consumer(Queue<Msg> &queue)
 {

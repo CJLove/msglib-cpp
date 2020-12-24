@@ -1,6 +1,6 @@
 #pragma once
-#include "BlockingCollection.h"
 #include "Pool.h"
+#include "Queue.h"
 #include <condition_variable>
 #include <deque>
 #include <iostream>
@@ -318,7 +318,7 @@ public:
      */
     template <typename T>
     void SendMessage(Label label, const T &t) {
-        const auto receivers = s_mailboxData->GetReceivers(label);
+        const auto &receivers = s_mailboxData->GetReceivers(label);
         for (const auto &receiver : receivers.m_receivers) {
             if (receiver == nullptr)
                 break;
@@ -369,7 +369,7 @@ private:
     /**
      * @brief Queue for this instance of the Mailbox class
      */
-    code_machina::BlockingCollection<Message> m_queue;
+    Queue<Message> m_queue;
 };
 
 /**
