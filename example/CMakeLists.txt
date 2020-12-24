@@ -7,6 +7,7 @@ set(CMAKE_CXX_CLANG_TIDY "")
 
 include_directories( 
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src
     .
 )
 
@@ -24,3 +25,8 @@ set (timer_SRC timer.cpp)
 
 add_executable( timer ${timer_SRC})
 target_link_libraries( timer msglib-cpp pthread )
+
+set (queue_SRC queue.cpp)
+
+add_executable( queue ${queue_SRC})
+target_link_libraries( queue msglib-cpp pthread )

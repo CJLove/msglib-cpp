@@ -23,6 +23,7 @@ set ( msglibTests_SRC
     test_TimeConv.cpp
     test_Mailbox.cpp
     test_Timers.cpp
+    test_Queue.cpp
 )
 
 add_executable ( msglibTests ${msglibTests_SRC} )
