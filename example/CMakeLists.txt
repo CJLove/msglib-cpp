@@ -29,3 +29,8 @@ set (queue_SRC queue.cpp)
 
 add_executable( queue ${queue_SRC})
 target_link_libraries( queue msglib-cpp pthread )
+
+set (thread_SRC thread.cpp)
+
+add_executable( thread ${thread_SRC})
+target_link_libraries( thread msglib-cpp pthread )
