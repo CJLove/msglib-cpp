@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(msglib-cpp)
 
 include_directories( 
-    ${CMAKE_SOURCE_DIR}/include 
+    ../include 
     .
 )
 
