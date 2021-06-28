@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 [ ! -d ./msglib-cpp-git ] && { echo "ERROR: repo not cloned!"; exit 1; }
 
