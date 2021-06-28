@@ -111,8 +111,10 @@ endif()
 # Threads
 find_package(Threads)
 
-# Google Test
-find_package(GTest)
+if (BUILD_TESTS)
+  # Google Test
+  find_package(GTest REQUIRED)
+endif()
 
 # clang-tidy
 if(ENABLE_CLANG_TIDY)
