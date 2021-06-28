@@ -1,0 +1,37 @@
+---
+resources:
+- name: msglib-cpp-git
+  type: git
+  icon: github
+  source:
+    uri: http://fir.love.io:3000/ChrisLove/msglib-cpp
+
+jobs:
+- name: build
+  public: true
+  plan:
+  - get: msglib-cpp-git
+    trigger: true
+  - task: list-files
+    config:
+      inputs:
+        - name: msglib-cpp-git
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: fir.love.io:3005/amd64/gcc1111 }
+      run:
+        path: ls
+        args: ["-la", "./msglib-cpp-git" ]
+  - task: build
+    config:
+      inputs:
+        - name: msglib-cpp-git
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: fir.love.io:3005/amd64/gcc1111 }
+      run:
+        path: ./msglib-cpp-git/ci/build.sh
+        args: []
+        
