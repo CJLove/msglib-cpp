@@ -15,7 +15,7 @@ jobs:
   - set_pipeline: msglib-cpp
     file: msglib-cpp-git/ci/pipeline.yml
 
-  - task: build
+  - task: build-unittest
     config:
       inputs:
         - name: msglib-cpp-git
@@ -26,32 +26,18 @@ jobs:
       run:
         path: ./msglib-cpp-git/ci/build.sh
         args: [ "-builddir=build" ]
-      outputs:
-        - name: build
 
-  - task: test
-    config:
-      inputs:
-        - name: msglib-cpp-git
-        - name: build
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: fir.love.io:3005/amd64/gcc1111 }
-      run:
-        path: ./msglib-cpp-git/ci/test.sh
-        args: [ "-builddir=build" ]
+- name: build-matrix
+  public: true
+  plan: 
+  - get: msglib-cpp-git
+  - in_parallel:
+    - task: gcc10_3_0
+      file: msglib-cpp-git/ci/gcc1030.yml
+    - task: gcc9_4_0
+      file: msglib-cpp-git/ci/gcc940.yml
+    - task: gcc8_4_0
+      file: msglib-cpp-git/ci/gcc840.yml
 
-
-  # - task: build-gcc10
-  #   config:
-  #     inputs:
-  #       - name: msglib-cpp-git
-  #     platform: linux
-  #     image_resource:
-  #       type: registry-image
-  #       source: { repository: fir.love.io:3005/amd64/gcc1030 }
-  #     run:
-  #       path: ./msglib-cpp-git/ci/build.sh
-  #       args: [ "-builddir=build", "-cc=/opt/gcc1030/bin/gcc", "-cxx=/opt/gcc1030/bin/g++" ]        
+     
         

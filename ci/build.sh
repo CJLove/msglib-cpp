@@ -85,4 +85,11 @@ make
 ret=$?
 [ $ret -ne 0 ] && exit $ret
 
+[ ! -x ./test/msglibTests ] && { echo "ERROR: unit tests not built!"; exit 1; }
+
+# Run unit tests
+./test/msglibTests
+ret=$?
+
+# Return result
 exit $ret
