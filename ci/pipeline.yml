@@ -27,12 +27,12 @@ jobs:
         path: ./msglib-cpp-git/ci/build.sh
         args: [ "-builddir=build" ]
       outputs:
-        - name: msglib-cpp-test
+        - name: build
 
   - task: test
     config:
       inputs:
-        - name: msglib-cpp-test
+        - name: build
       platform: linux
       image_resource:
         type: registry-image
