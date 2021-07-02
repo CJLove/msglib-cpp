@@ -12,7 +12,7 @@ jobs:
   plan:
   - get: msglib-cpp-git
     trigger: true
-  - set_pipeline: set-pipelines
+  - set_pipeline: msglib-cpp
     file: msglib-cpp-git/ci/pipeline.yml
 
   - task: build
