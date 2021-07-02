@@ -12,17 +12,6 @@ jobs:
   plan:
   - get: msglib-cpp-git
     trigger: true
-  - task: list-files
-    config:
-      inputs:
-        - name: msglib-cpp-git
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: fir.love.io:3005/amd64/gcc1111 }
-      run:
-        path: ls
-        args: ["-la", "./msglib-cpp-git" ]
   - task: build
     config:
       inputs:
@@ -33,5 +22,16 @@ jobs:
         source: { repository: fir.love.io:3005/amd64/gcc1111 }
       run:
         path: ./msglib-cpp-git/ci/build.sh
-        args: []
+        args: [ "-builddir=build" ]
+  - task: build-gcc9
+    config:
+      inputs:
+        - name: msglib-cpp-git
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: fir.love.io:3005/amd64/gcc1030 }
+      run:
+        path: ./msglib-cpp-git/ci/build.sh
+        args: [ "-builddir=build", "-cc=/opt/gcc1030/bin/gcc", "-cxx=/opt/gcc1030/bin/g++" ]        
         
