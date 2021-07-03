@@ -16,9 +16,11 @@ jobs:
     file: msglib-cpp-git/ci/pipeline.yml
 - name: build-matrix
   public: true
-  plan: 
+  plan:  
   - get: msglib-cpp-git
     trigger: true
+    passed: 
+    - set-pipeline
   - in_parallel:
     - task: gcc11_1_1
       file: msglib-cpp-git/ci/gcc1111.yml
@@ -34,6 +36,8 @@ jobs:
   plan:
   - get: msglib-cpp-git
     trigger: true
+    passed: 
+    - build-matrix
   - in_parallel:
     - task: asan
       file: msglib-cpp-git/ci/asan.yml
