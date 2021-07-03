@@ -11,6 +11,7 @@ jobs:
   public: true
   plan: 
   - get: msglib-cpp-git
+    trigger: true
   - in_parallel:
     - task: gcc11_1_1
       file: msglib-cpp-git/ci/gcc1111.yml
@@ -21,5 +22,15 @@ jobs:
     - task: gcc8_4_0
       file: msglib-cpp-git/ci/gcc840.yml
 
-     
+- name: sanitizers
+  public: true
+  plan:
+  - get: msglib-cpp-git
+    trigger: true
+  - in_parallel:
+    - task: asan
+      file: msglib-cpp-git/ci/asan.yml
+    - task: tsan
+      file: msglib-cpp-git/ci/tsan.yml
+
         

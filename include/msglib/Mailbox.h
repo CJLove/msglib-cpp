@@ -102,10 +102,7 @@ public:
     template <typename T>
     T *as() {
         if (m_data != nullptr && sizeof(T) == m_size && std::is_trivial<T>()) {
-            // T result;
-            // memcpy(&result,m_data->get(),sizeof(T));
-            // return result;
-            return reinterpret_cast<T *>(m_data->get());
+            return static_cast<T *>(m_data->get());
         }
         return nullptr;
     }

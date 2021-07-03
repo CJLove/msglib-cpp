@@ -11,6 +11,8 @@ class Timer {
 public:
     Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type);
 
+    ~Timer();
+
     void cancel() {
         itimerspec itsnew {};
         itsnew.it_value.tv_sec = itsnew.it_value.tv_nsec = 0;
@@ -65,6 +67,11 @@ Timer::Timer(Mailbox &mailbox, Label label, timespec time, TimerType_e type)
     if (timer_settime(m_timer, 0, &m_spec, nullptr) == -1) {
         throw std::runtime_error("Couldn't start timer");
     }
+}
+
+Timer::~Timer()
+{
+    timer_delete(m_timer);
 }
 
 void Timer::handler(int, siginfo_t *si, void * /* uc */) {

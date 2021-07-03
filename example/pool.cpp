@@ -12,7 +12,7 @@ struct Foo {
 
 using namespace msglib;
 
-int main(int /* argc */, char /* *argv[] */) {
+int main(int argc , char  **argv ) {
     constexpr int SIZE = 256;
     msglib::Pool<Foo> mp(SIZE);
 
