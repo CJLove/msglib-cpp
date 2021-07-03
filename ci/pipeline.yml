@@ -7,31 +7,13 @@ resources:
     uri: http://fir.love.io:3000/ChrisLove/msglib-cpp
 
 jobs:
-- name: build
-  public: true
-  plan:
-  - get: msglib-cpp-git
-    trigger: true
-  - set_pipeline: msglib-cpp
-    file: msglib-cpp-git/ci/pipeline.yml
-
-  - task: build-unittest
-    config:
-      inputs:
-        - name: msglib-cpp-git
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: fir.love.io:3005/amd64/gcc1111 }
-      run:
-        path: ./msglib-cpp-git/ci/build.sh
-        args: [ "-builddir=build" ]
-
 - name: build-matrix
   public: true
   plan: 
   - get: msglib-cpp-git
   - in_parallel:
+    - task: gcc11_1_1
+      file: msglib-cpp-git/ci/gcc1111.yml
     - task: gcc10_3_0
       file: msglib-cpp-git/ci/gcc1030.yml
     - task: gcc9_4_0
