@@ -32,7 +32,6 @@ void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
 }
 
 Receivers &MailboxData::GetReceivers(Label label) {
-    std::lock_guard<std::mutex> lock(m_mutex);
     std::unordered_map<Label, Receivers>::iterator f = m_mailboxes.find(label);
     if (f != m_mailboxes.end()) {
         return f->second;
@@ -85,6 +84,8 @@ void Mailbox::ReleaseMessage(Message &msg) {
 }
 
 void Mailbox::SendSignal(Label label) {
+    std::lock_guard<std::mutex> guard(s_mailboxData->GetMutex());
+    
     const auto &receivers = s_mailboxData->GetReceivers(label);
     for (const auto &receiver : receivers.m_receivers) {
         if (receiver == nullptr)

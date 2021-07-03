@@ -214,6 +214,8 @@ public:
      */
     Receivers &GetReceivers(Label);
 
+    std::mutex &GetMutex() { return m_mutex; }
+
     /**
      * @brief Get a small message block from the pool
      *
@@ -315,6 +317,8 @@ public:
      */
     template <typename T>
     void SendMessage(Label label, const T &t) {
+        std::lock_guard<std::mutex> guard(s_mailboxData->GetMutex());
+        
         const auto &receivers = s_mailboxData->GetReceivers(label);
         for (const auto &receiver : receivers.m_receivers) {
             if (receiver == nullptr)
