@@ -7,6 +7,13 @@ resources:
     uri: http://fir.love.io:3000/ChrisLove/msglib-cpp
 
 jobs:
+- name: set-pipeline
+  public: true
+  plan:
+  - get: msglib-cpp-git
+    trigger: true
+  - set_pipeline: msglib-cpp
+    file: msglib-cpp-git/ci/pipeline.yml
 - name: build-matrix
   public: true
   plan: 
