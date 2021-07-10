@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <memory>
 #include <mutex>
+#include <cstdalign>
 #include <new>
 
 // Based on https://thinkingeek.com/2017/11/19/simple-memory-pool/ with updates for thread safety
@@ -11,7 +12,8 @@ namespace msglib {
 template <typename T> class Pool {
     union PoolItem {
     private:
-        using StorageType = alignas(alignof(T)) char[sizeof(T)];
+        //using StorageType = alignas(alignof(T)) char[sizeof(T)];
+        using StorageType = char[sizeof(T)];
 
         PoolItem *m_next;
 
