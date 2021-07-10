@@ -121,10 +121,5 @@ else
     ret=$?
 fi
 
-
-# Run unit tests
-./test/msglibTests
-ret=$?
-
 # Return result
 exit $ret
