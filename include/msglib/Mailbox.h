@@ -122,7 +122,7 @@ class Mailbox;
  */
 struct Receivers {
     std::vector<Mailbox *> m_receivers;
-    const int MAX_RECEIVERS = 3;
+    const size_t MAX_RECEIVERS = 3;
 
     /**
      * @brief Construct a new Receivers object
@@ -176,7 +176,7 @@ struct Receivers {
      */
     bool remove(Mailbox *mbox) {
         bool remove = true;
-        for (int i = 0; i < MAX_RECEIVERS; i++) {
+        for (size_t i = 0; i < MAX_RECEIVERS; i++) {
             if (m_receivers[i] == mbox) {
                 m_receivers[i] = nullptr;
             }
