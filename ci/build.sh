@@ -100,7 +100,7 @@ ret=$?
 
 if [ $PARAM_COVER -eq 1 ]; then
     # Run CppCoverage to get unit test report and code coverage info
-    make MsglibCoverage
+    make MsgLibCoverage
     ret=$?
     if [ $ret -eq 0 ]; then
         # Generate unit test html report and post to artstore
