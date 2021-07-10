@@ -14,11 +14,26 @@ jobs:
     trigger: true
   - set_pipeline: msglib-cpp
     file: msglib-cpp-git/ci/pipeline.yml
+
+# Build using current gcc and clang and fail fast
+- name: build-current
+  public: true
+  plan:
+  - get: msglib-cpp-git
+    passed: [ set-pipeline ]
+    trigger: true
+  - in_parallel:
+    - task: gcc11_1_1
+      file: msglib-cpp-git/ci/gcc1111.yml
+    - task: clang
+      file: msglib-cpp-git/ci/clang.yml
+
+
 - name: build-matrix
   public: true
   plan:  
   - get: msglib-cpp-git
-    passed: [ set-pipeline ]
+    passed: [ build-current ]
     trigger: true
   - in_parallel:
     - task: gcc11_1_1

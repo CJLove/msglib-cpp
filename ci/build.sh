@@ -100,17 +100,17 @@ ret=$?
 
 if [ $PARAM_COVER -eq 1 ]; then
     # Run CppCoverage to get unit test report and code coverage info
-    make ConfigCppCoverage
+    make MsglibCoverage
     ret=$?
     if [ $ret -eq 0 ]; then
         # Generate unit test html report and post to artstore
         junit2html unittests.xml index.html
-        curl -F item=@index.html -F item=@index.html http://fir.love.io:3004/artstore/config-cpp/unit
+        curl -F item=@index.html -F item=@index.html http://fir.love.io:3004/artstore/msglib-cpp/unit
         echo "Unit Test Report: http://fir.love.io:3004/dev/msglib-cpp/unit/"
 
         # Create code coverage tarball
-        cd ConfigCppCoverage/ && tar zcf ../coverage.tar.gz . && cd -
-        curl -F item=@coverage.tar.gz http://fir.love.io:3004/artstore/config-cpp/coverage
+        cd MsgLibCoverage/ && tar zcf ../coverage.tar.gz . && cd -
+        curl -F item=@coverage.tar.gz http://fir.love.io:3004/artstore/msglib-cpp/coverage
         echo "Code Coverage: http://fir.love.io:3004/dev/msglib-cpp/coverage/"
     fi
 else
