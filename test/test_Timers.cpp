@@ -48,6 +48,8 @@ void RecurringEventTestThread(EventTester &tester) {
 }
 
 TEST(TimerManager, OneShotPOSIX) {
+    TimerManager::Initialize();
+
     timespec ts {0, 500000000};
     EventTester tester;
 

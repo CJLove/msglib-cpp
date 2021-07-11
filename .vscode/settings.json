@@ -74,6 +74,10 @@
         "valarray": "cpp",
         "variant": "cpp",
         "cassert": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "ranges": "cpp",
+        "stop_token": "cpp"
     }
 }
