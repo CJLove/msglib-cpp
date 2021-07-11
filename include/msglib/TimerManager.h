@@ -25,6 +25,8 @@ class TimerManagerData {
 public:
     TimerManagerData();
 
+    void initialize();
+
     void startTimer(const Label &label, const timespec &time, const TimerType_e type);
 
     void cancelTimer(const Label &label);
@@ -41,6 +43,8 @@ private:
  */
 class TimerManager {
 public:
+    static void Initialize();
+
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
      *

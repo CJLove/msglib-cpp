@@ -77,6 +77,8 @@ int main(int /* argc */, char ** /* argv */)
 {
     const time_t PERIOD = 750;  // msec
     const ulong MSEC_TO_NS = 1000000;
+    std::cout << "Calling Initialize()\n";
+    TimerManager::Initialize();
 
     std::thread t1(thread1,1);
     std::thread t2(thread2,2);
