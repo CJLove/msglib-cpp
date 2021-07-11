@@ -12,7 +12,7 @@ struct Foo {
 
 using namespace msglib;
 
-int main(int argc , char  **argv ) {
+int main(int /* argc */, char ** /* argv */ ) {
     constexpr int SIZE = 256;
     msglib::Pool<Foo> mp(SIZE);
 
@@ -31,6 +31,8 @@ int main(int argc , char  **argv ) {
     }
     try {
         Foo *n = mp.alloc(256);
+
+        mp.free(n);
     } catch (std::exception &e) {
         std::cout << "Caught " << e.what() << "\n";
     }

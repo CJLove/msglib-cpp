@@ -5,7 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <stdio.h>
+#include <cstdio>
 
 namespace msglib {
 

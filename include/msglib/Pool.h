@@ -1,5 +1,4 @@
 #pragma once
-#include <assert.h>
 #include <memory>
 #include <mutex>
 #include <cstdalign>
@@ -46,7 +45,6 @@ template <typename T> class Pool {
         PoolItem* getStorage() const { return m_storage.get(); }
 
         void setNextArena(std::unique_ptr<PoolArena> &&n) {
-            assert(!m_next);
             m_next.reset(n.release());
         }
 

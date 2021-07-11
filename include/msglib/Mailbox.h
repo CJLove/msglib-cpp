@@ -7,7 +7,7 @@
 #include <memory>
 #include <mutex>
 #include <stdexcept>
-#include <string.h>
+#include <cstring>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>

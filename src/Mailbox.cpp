@@ -10,7 +10,7 @@ std::unique_ptr<MailboxData> Mailbox::s_mailboxData = std::make_unique<MailboxDa
 
 void MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    Mailboxes::iterator f = m_mailboxes.find(label);
+    auto f = m_mailboxes.find(label);
     if (f == m_mailboxes.end()) {
         Receivers r(mbox);
         m_mailboxes[label] = r;
@@ -23,7 +23,7 @@ void MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
 
 void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    std::unordered_map<Label, Receivers>::iterator f = m_mailboxes.find(label);
+    auto f = m_mailboxes.find(label);
     if (f != m_mailboxes.end()) {
         if (f->second.remove(mbox)) {
             m_mailboxes.erase(f);
@@ -32,7 +32,7 @@ void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
 }
 
 Receivers &MailboxData::GetReceivers(Label label) {
-    std::unordered_map<Label, Receivers>::iterator f = m_mailboxes.find(label);
+    auto f = m_mailboxes.find(label);
     if (f != m_mailboxes.end()) {
         return f->second;
     }
@@ -63,7 +63,7 @@ void MailboxData::freeLarge(MailboxData::LargeBlock *msg) { m_largePool.free(msg
 
 Mailbox::Mailbox() : m_queue(256) { }
 
-Mailbox::~Mailbox() { }
+Mailbox::~Mailbox() = default;
 
 void Mailbox::RegisterForLabel(Label label) { s_mailboxData->RegisterForLabel(label, this); }
 
@@ -74,7 +74,7 @@ void Mailbox::Receive(Message &msg) {
 }
 
 void Mailbox::ReleaseMessage(Message &msg) {
-    if (msg.m_data) {
+    if (msg.m_data != nullptr) {
         if (msg.m_size < SMALL_SIZE) {
             s_mailboxData->freeSmall(reinterpret_cast<MailboxData::SmallBlock *>(msg.m_data));
         } else {
@@ -88,8 +88,9 @@ void Mailbox::SendSignal(Label label) {
     
     const auto &receivers = s_mailboxData->GetReceivers(label);
     for (const auto &receiver : receivers.m_receivers) {
-        if (receiver == nullptr)
+        if (receiver == nullptr) {
             break;
+        }
         Message m(label);
         receiver->m_queue.emplace(label);
     }
