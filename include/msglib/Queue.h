@@ -104,6 +104,31 @@ public:
     }
 
     /**
+     * @brief 
+     * 
+     * @tparam Rep 
+     * @tparam Period 
+     * @param value - value returned from the queue
+     * @param duration - how long to wait before returning false
+     * @return true - element was dequeued
+     * @return false - pop() operation timed out
+     */
+    template<class Rep, class Period>
+    bool popWait(T& value, const std::chrono::duration<Rep, Period>& duration) {
+        {
+            std::unique_lock<std::mutex> uniqueLock(m_mutex);
+            if (m_condVariable.wait_for(uniqueLock, duration, [this]() { return !m_queue.empty(); })) {
+                value = m_queue.front();
+                m_queue.pop();
+                return true;
+            } else {
+                return false;
+            }
+
+        }
+    }
+
+    /**
      * @brief Pop a value off of the queue, blocking until 
      * 
      * @param value - value returned from the queue

@@ -76,6 +76,19 @@ void producer(Queue<TestStruct> &queue)
 
 }
 
+TEST(QueueTest, popWaitTests) {
+    Queue<TestStruct> queue(2);
+    TestStruct msg;
+    EXPECT_EQ(false,queue.popWait(msg,500ms));
+
+    queue.emplace(1,2,3);
+    EXPECT_EQ(true,queue.popWait(msg,500ms));
+    EXPECT_EQ(1,msg.m_a);
+    EXPECT_EQ(2,msg.m_b);
+    EXPECT_EQ(3,msg.m_c);
+
+}
+
 TEST(QueueTest, popTests) {
     Queue<TestStruct> queue(2);
 
