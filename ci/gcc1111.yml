@@ -2,7 +2,6 @@
 platform: linux
 image_resource:
   type: registry-image
-  insecure: true
   source: { repository: fir.love.io:3005/amd64/gcc1111 }
 
 inputs:
