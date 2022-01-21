@@ -6,7 +6,7 @@ namespace msglib {
  * @brief Static member declaration
  *
  */
-std::unique_ptr<MailboxData> Mailbox::s_mailboxData = std::make_unique<MailboxData>();
+MailboxData Mailbox::s_mailboxData;
 
 void MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -61,13 +61,13 @@ MailboxData::LargeBlock *MailboxData::getLarge() {
 
 void MailboxData::freeLarge(MailboxData::LargeBlock *msg) { m_largePool.free(msg); }
 
-Mailbox::Mailbox() : m_queue(256) { }
+Mailbox::Mailbox() : m_queue(QUEUE_SIZE) { }
 
 Mailbox::~Mailbox() = default;
 
-void Mailbox::RegisterForLabel(Label label) { s_mailboxData->RegisterForLabel(label, this); }
+void Mailbox::RegisterForLabel(Label label) { s_mailboxData.RegisterForLabel(label, this); }
 
-void Mailbox::UnregisterForLabel(Label label) { s_mailboxData->UnregisterForLabel(label, this); }
+void Mailbox::UnregisterForLabel(Label label) { s_mailboxData.UnregisterForLabel(label, this); }
 
 void Mailbox::Receive(Message &msg) {
     m_queue.pop(msg);
@@ -76,17 +76,17 @@ void Mailbox::Receive(Message &msg) {
 void Mailbox::ReleaseMessage(Message &msg) {
     if (msg.m_data != nullptr) {
         if (msg.m_size < SMALL_SIZE) {
-            s_mailboxData->freeSmall(reinterpret_cast<MailboxData::SmallBlock *>(msg.m_data));
+            s_mailboxData.freeSmall(reinterpret_cast<MailboxData::SmallBlock *>(msg.m_data));
         } else {
-            s_mailboxData->freeLarge(reinterpret_cast<MailboxData::LargeBlock *>(msg.m_data));
+            s_mailboxData.freeLarge(reinterpret_cast<MailboxData::LargeBlock *>(msg.m_data));
         }
     }
 }
 
 void Mailbox::SendSignal(Label label) {
-    std::lock_guard<std::mutex> guard(s_mailboxData->GetMutex());
+    std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
     
-    const auto &receivers = s_mailboxData->GetReceivers(label);
+    const auto &receivers = s_mailboxData.GetReceivers(label);
     for (const auto &receiver : receivers.m_receivers) {
         if (receiver == nullptr) {
             break;

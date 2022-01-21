@@ -64,7 +64,7 @@ public:
 
 private:
     uint16_t m_size;
-    char m_data[msgSize];
+    std::array<char,msgSize> m_data;
 };
 
 /**
@@ -82,7 +82,7 @@ public:
      * 
      * @param label - message's label
      */
-    Message(Label label) : m_label(label), m_size(0), m_data(nullptr) { }
+    explicit Message(Label label) : m_label(label)  { }
 
     /**
      * @brief Construct a new Message object with a specific label and amount of message data
@@ -91,7 +91,7 @@ public:
      * @param size - message's size
      * @param data - message's data
      */
-    Message(Label label, uint16_t size, DataBlockBase *data) : m_label(label), m_size(size), m_data(data) { }
+    Message(Label label, uint16_t size, DataBlockBase *data) : m_data(data), m_label(label), m_size(size) { }
 
     /**
      * @brief Return this message instance's data as a pointer to an object of type T
@@ -107,9 +107,9 @@ public:
         return nullptr;
     }
 
+    DataBlockBase *m_data = nullptr;
     Label m_label = 0;
     uint16_t m_size = 0;
-    DataBlockBase *m_data = nullptr;
 };
 
 /**
@@ -137,7 +137,7 @@ struct Receivers {
      *
      * @param mbox - first receiver
      */
-    Receivers(Mailbox *mbox) {
+    explicit Receivers(Mailbox *mbox) {
         m_receivers.resize(MAX_RECEIVERS);
         m_receivers[0] = mbox;
         m_receivers[1] = m_receivers[2] = nullptr;
@@ -200,19 +200,19 @@ public:
     /**
      * @brief Register a Mailbox instance as a receiver for a particular label
      */
-    void RegisterForLabel(Label, Mailbox *);
+    void RegisterForLabel(Label label, Mailbox *mbox);
 
     /**
      * @brief Unregister a Mailbox instance as a receiver for a particular label
      */
-    void UnregisterForLabel(Label, Mailbox *);
+    void UnregisterForLabel(Label label, Mailbox *mbox);
 
     /**
      * @brief Get the registered receivers for the specified label
      * 
      * @return Receivers& 
      */
-    Receivers &GetReceivers(Label);
+    Receivers &GetReceivers(Label label);
 
     std::mutex &GetMutex() { return m_mutex; }
 
@@ -269,6 +269,7 @@ private:
  */
 class Mailbox {
 public:
+    const size_t QUEUE_SIZE = 256;
     /**
      * @brief Construct a new Mailbox object
      */
@@ -306,7 +307,7 @@ public:
     /**
      * @brief Release the data block associated with a message
      */
-    void ReleaseMessage(Message &);
+    void ReleaseMessage(Message &msg);
 
     /**
      * @brief Send a message with a specific label and associated data of type T
@@ -317,14 +318,15 @@ public:
      */
     template <typename T>
     void SendMessage(Label label, const T &t) {
-        std::lock_guard<std::mutex> guard(s_mailboxData->GetMutex());
+        std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
         
-        const auto &receivers = s_mailboxData->GetReceivers(label);
+        const auto &receivers = s_mailboxData.GetReceivers(label);
         for (const auto &receiver : receivers.m_receivers) {
-            if (receiver == nullptr)
+            if (receiver == nullptr) {
                 break;
+            }
             if (sizeof(T) < SMALL_SIZE) {
-                MailboxData::SmallBlock *m = s_mailboxData->getSmall();
+                MailboxData::SmallBlock *m = s_mailboxData.getSmall();
                 if (m) {
                     m->put(t);
                     receiver->m_queue.emplace(label, sizeof(T), m);
@@ -332,7 +334,7 @@ public:
                     throw std::runtime_error("Couldn't get a block");
                 }
             } else if (sizeof(T) < LARGE_SIZE) {
-                MailboxData::LargeBlock *m = s_mailboxData->getLarge();
+                MailboxData::LargeBlock *m = s_mailboxData.getLarge();
                 if (m) {
                     m->put(t);
                     receiver->m_queue.emplace(label, sizeof(T), m);
@@ -365,7 +367,7 @@ private:
     /**
      * @brief Shared mailbox state among all Mailbox instances
      */
-    static std::unique_ptr<MailboxData> s_mailboxData;
+    static MailboxData s_mailboxData;
 
     /**
      * @brief Queue for this instance of the Mailbox class

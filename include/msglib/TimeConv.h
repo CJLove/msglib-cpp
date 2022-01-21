@@ -21,4 +21,4 @@ timespec Chrono2Timespec( std::chrono::duration<T,P> dur)
     return timespec{secs.count(), std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count()};
 }
 
-}
+}   // namespace msglib

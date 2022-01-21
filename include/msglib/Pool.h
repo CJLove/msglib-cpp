@@ -12,30 +12,32 @@ template <typename T> class Pool {
     union PoolItem {
     private:
         //using StorageType = alignas(alignof(T)) char[sizeof(T)];
-        using StorageType = char[sizeof(T)];
+        using StorageType = std::array<char,sizeof(T)>;
 
         PoolItem *m_next;
 
         StorageType m_datum;
+
     public:
         void setNextItem(PoolItem *n) { m_next = n; }
         PoolItem *getNextItem() const { return m_next; }
 
-        T *getStorage() { return reinterpret_cast<T*>(m_datum); }
+        T *getStorage() { return reinterpret_cast<T*>(&m_datum[0]); }
 
         static PoolItem *storageToItem(T *t) {
-            PoolItem *currentItem = reinterpret_cast<PoolItem*>(t);
+            auto *currentItem = reinterpret_cast<PoolItem*>(t);
             return currentItem;
         }
     };
 
     struct PoolArena {
     private:
+
         std::unique_ptr<PoolItem[]> m_storage;
         std::unique_ptr<PoolArena> m_next;
         size_t m_size;
     public:
-        PoolArena(size_t arena_size): m_storage(new PoolItem[arena_size]), m_size(arena_size) {
+        explicit PoolArena(size_t arena_size): m_storage(new PoolItem[arena_size]), m_size(arena_size) {
             for (size_t i = 1; i < m_size; i++) {
                 m_storage[i-1].setNextItem(&m_storage[i]);
             }
@@ -56,15 +58,17 @@ template <typename T> class Pool {
         }
     };
 
+    const size_t ARENA_SIZE = 256;
+
     std::mutex m_mutex;
-    size_t m_capacity;
-    size_t m_size;
+    size_t m_capacity = ARENA_SIZE;
+    size_t m_size = ARENA_SIZE;
     std::unique_ptr<PoolArena> m_arena;
     PoolItem *m_freeList;
 
 public:
 
-    Pool(size_t arena_size) :
+    explicit Pool(size_t arena_size) :
         m_capacity(arena_size),
         m_size(arena_size),
         m_arena(new PoolArena(arena_size)),
@@ -74,9 +78,9 @@ public:
     }
 
     Pool() : 
-        m_capacity(256),
-        m_size(256),
-        m_arena(new PoolArena(256)),
+        m_capacity(ARENA_SIZE),
+        m_size(ARENA_SIZE),
+        m_arena(new PoolArena(ARENA_SIZE)),
         m_freeList(m_arena->getStorage())
     {
 

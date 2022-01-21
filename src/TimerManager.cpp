@@ -71,7 +71,7 @@ Timer::~Timer()
 
 struct TimerManagerData::TimerManagerDataImpl {
 
-    TimerManagerDataImpl();
+    TimerManagerDataImpl() = default;
 
     ~TimerManagerDataImpl();
 
@@ -88,9 +88,6 @@ struct TimerManagerData::TimerManagerDataImpl {
     std::atomic<bool> m_shutdown;
 };
 
-TimerManagerData::TimerManagerDataImpl::TimerManagerDataImpl()
-{
-}
 
 TimerManagerData::TimerManagerDataImpl::~TimerManagerDataImpl()
 {
@@ -125,7 +122,7 @@ void TimerManagerData::TimerManagerDataImpl::HandleSignals()
         if (result == SIGRTMIN) {
             std::lock_guard<std::recursive_mutex> guard(m_mutex);
 
-            Timer *timer = reinterpret_cast<Timer *>(info.si_value.sival_ptr);
+            auto *timer = reinterpret_cast<Timer *>(info.si_value.sival_ptr);
             timer->timerEvent();
         }
     }
@@ -174,7 +171,7 @@ void TimerManager::Initialize() {
     if (sigaddset(&sigset,SIGRTMIN) != 0) {
         throw std::runtime_error("sigaddset error");
     }
-    if (sigprocmask(SIG_BLOCK,&sigset,nullptr) != 0) {
+    if (sigprocmask(SIG_BLOCK,&sigset,nullptr) != 0) {  // NOLINT
         throw std::runtime_error("sigprocmask error");
     }
     if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
