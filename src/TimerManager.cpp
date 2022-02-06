@@ -1,10 +1,13 @@
 #include "msglib/TimerManager.h"
 #include "msglib/Mailbox.h"
-#include <thread>
-#include <mutex>
 #include <atomic>
+#include <csignal>
+#include <mutex>
+#include <thread>
 
 namespace msglib {
+
+namespace detail {
 
 /**
  * @brief Timer is a representation of a timer which has been scheduled within the TimerManager
@@ -68,6 +71,7 @@ Timer::~Timer()
 {
     timer_delete(m_timer);
 }
+
 
 struct TimerManagerData::TimerManagerDataImpl {
 
@@ -152,18 +156,19 @@ void TimerManagerData::cancelTimer(const Label &label) {
     }
 }
 
+} // Namespace detail
+
 /**
  * @brief Static member declaration
  *
  */
-std::unique_ptr<TimerManagerData> TimerManager::s_timerData;
+std::unique_ptr<detail::TimerManagerData> TimerManager::s_timerData;
+
 
 void TimerManager::Initialize() {
-    s_timerData = std::make_unique<TimerManagerData>();
+    s_timerData = std::make_unique<detail::TimerManagerData>();
+    s_timerData->initialize();
     sigset_t sigset;
-    // if (sigfillset(&sigset) != 0) {
-    //     throw std::runtime_error("sigfillset error");
-    // }
     if (sigemptyset(&sigset) != 0) {
         throw std::runtime_error("sigfillset error");
     }
@@ -176,7 +181,6 @@ void TimerManager::Initialize() {
     if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
         throw std::runtime_error("pthread_sigmask error");
     }
-    s_timerData->initialize();
 }
 
 void TimerManager::StartTimer(const Label &label, const timespec &time, const TimerType_e type) {
