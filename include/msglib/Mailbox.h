@@ -60,7 +60,7 @@ public:
         }
     }
 
-    size_t size() const { return m_size; }
+    [[nodiscard]] size_t size() const { return m_size; }
 
 private:
     uint16_t m_size;

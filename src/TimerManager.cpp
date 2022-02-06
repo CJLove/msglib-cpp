@@ -158,7 +158,7 @@ void TimerManagerData::cancelTimer(const Label &label) {
  * @brief Static member declaration
  *
  */
-std::unique_ptr<TimerManagerData> TimerManager::s_timerData = std::make_unique<TimerManagerData>();
+TimerManagerData TimerManager::s_timerData;
 
 void TimerManager::Initialize() {
     sigset_t sigset;
@@ -177,11 +177,11 @@ void TimerManager::Initialize() {
     if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
         throw std::runtime_error("pthread_sigmask error");
     }
-    s_timerData->initialize();
+    s_timerData.initialize();
 }
 
 void TimerManager::StartTimer(const Label &label, const timespec &time, const TimerType_e type) {
-    s_timerData->startTimer(label, time, type);
+    s_timerData.startTimer(label, time, type);
 }
 
 void TimerManager::StartTimer(
@@ -190,11 +190,11 @@ void TimerManager::StartTimer(
     auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
         std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
 
-    s_timerData->startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
+    s_timerData.startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
 }
 
 void TimerManager::CancelTimer(const Label &label) {
-    s_timerData->cancelTimer(label);
+    s_timerData.cancelTimer(label);
 }
 
 }  // Namespace msglib

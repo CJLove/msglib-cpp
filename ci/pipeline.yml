@@ -40,8 +40,6 @@ jobs:
       file: msglib-cpp-git/ci/gcc1030.yml
     - task: gcc9_4_0
       file: msglib-cpp-git/ci/gcc940.yml
-    - task: gcc8_4_0
-      file: msglib-cpp-git/ci/gcc840.yml
 
 - name: sanitizers
   public: true

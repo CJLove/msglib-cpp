@@ -66,7 +66,7 @@ public:
     template <class T, class P>
     static void StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
         auto ts = Chrono2Timespec(time);
-        s_timerData->startTimer(label, ts, type);
+        s_timerData.startTimer(label, ts, type);
     }
 
     /**
@@ -86,7 +86,7 @@ public:
     static void CancelTimer(const Label &label);
 
 private:
-    static std::unique_ptr<TimerManagerData> s_timerData;
+    static TimerManagerData s_timerData;
 };
 
 }  // namespace msglib
