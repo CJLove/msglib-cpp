@@ -365,7 +365,7 @@ public:
 
 private:
     /**
-     * @brief Shared mailbox state among all Mailbox instances
+T     * @brief Shared mailbox state among all Mailbox instances
      */
     static MailboxData s_mailboxData;
 
