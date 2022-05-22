@@ -33,7 +33,7 @@ private:
     std::unique_ptr<TimerManagerDataImpl> m_pImpl;
 };
 
-} // detail
+} // Namespace detail
 
 /**
  * @brief TimerManager supports one-shot and recurring timers which result in specific signals being sent
