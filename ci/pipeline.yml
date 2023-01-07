@@ -23,8 +23,8 @@ jobs:
     passed: [ set-pipeline ]
     trigger: true
   - in_parallel:
-    - task: gcc11_1_1
-      file: msglib-cpp-git/ci/gcc1111.yml
+    - task: gcc1221
+      file: msglib-cpp-git/ci/gcc1221.yml
     - task: clang
       file: msglib-cpp-git/ci/clang.yml
 
@@ -36,6 +36,8 @@ jobs:
     passed: [ build-current ]
     trigger: true
   - in_parallel:
+    - task: gcc11_3_0
+      file: msglib-cpp-git/ci/gcc1130.yml
     - task: gcc10_3_0
       file: msglib-cpp-git/ci/gcc1030.yml
     - task: gcc9_4_0

@@ -1,6 +1,7 @@
 #pragma once
 #include "Pool.h"
 #include "Queue.h"
+#include <array>
 #include <condition_variable>
 #include <deque>
 #include <iostream>
