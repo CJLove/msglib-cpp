@@ -2,12 +2,8 @@
 #include "Mailbox.h"
 #include "TimeConv.h"
 #include <chrono>
-#include <csignal>
 #include <cstdint>
-#include <ctime>
 #include <memory>
-#include <mutex>
-#include <unordered_map>
 
 namespace msglib {
 
@@ -17,6 +13,7 @@ namespace msglib {
  */
 enum TimerType_e { PERIODIC, ONE_SHOT };
 
+namespace detail {
 /**
  * @brief TimerManagerData is the centralized representation of all timers managed by
  *        the TimerManager.
@@ -35,6 +32,8 @@ private:
     struct TimerManagerDataImpl;
     std::unique_ptr<TimerManagerDataImpl> m_pImpl;
 };
+
+} // Namespace detail
 
 /**
  * @brief TimerManager supports one-shot and recurring timers which result in specific signals being sent
@@ -65,8 +64,12 @@ public:
      */
     template <class T, class P>
     static void StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
-        auto ts = Chrono2Timespec(time);
-        s_timerData->startTimer(label, ts, type);
+        if (s_timerData) {
+            auto ts = Chrono2Timespec(time);
+            s_timerData->startTimer(label, ts, type);
+        } else {
+            throw std::runtime_error("TimerManager not initialized");
+        }
     }
 
     /**
@@ -86,7 +89,7 @@ public:
     static void CancelTimer(const Label &label);
 
 private:
-    static std::unique_ptr<TimerManagerData> s_timerData;
+    static std::unique_ptr<detail::TimerManagerData> s_timerData;
 };
 
 }  // namespace msglib

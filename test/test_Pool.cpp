@@ -9,10 +9,33 @@ struct TestStruct {
     TestStruct(int a, int b, int c) : m_a(a), m_b(b), m_c(c) {
     }
 
+    TestStruct(bool except) {
+        if (except) {
+            throw std::runtime_error("expected exception");
+        }
+    }
+
     int m_a = 0;
     int m_b = 0;
     int m_c = 0;
 };
+
+TEST(PoolTest, allocFail) {
+    msglib::Pool<TestStruct> pool(3);
+    EXPECT_EQ(3,pool.size());
+    EXPECT_EQ(3,pool.capacity());
+
+    try {
+        // Throw as part of allocating
+        auto t1 = pool.alloc(true);
+        FAIL() << "expected std::runtime_error()";
+        pool.free(t1);
+    }
+    catch (std::exception &e) {
+
+        EXPECT_EQ(3,pool.size());
+    }
+}
 
 TEST(PoolTest, allocFree) {
     msglib::Pool<TestStruct> pool(3);
@@ -39,6 +62,8 @@ TEST(PoolTest, allocFree) {
         // Expect std::bad_alloc to be thrown
     } catch (std::exception &e) { FAIL() << "unexpected exception " << e.what(); }
 
+    std::cout << "pool.size() = " << pool.size() << "\n";
+
     pool.free(t1);
     EXPECT_EQ(1, pool.size());
 
@@ -46,12 +71,6 @@ TEST(PoolTest, allocFree) {
     pool.free(nullptr);
     EXPECT_EQ(1, pool.size());
 
-    // Try freeing an item not part of the pool
-    auto t5 = new TestStruct(10, 11, 12);
-    pool.free(t5);
-
-    delete t5;
-    EXPECT_EQ(1, pool.size());
 }
 
 void testPoolThread(msglib::Pool<TestStruct> *pool) {

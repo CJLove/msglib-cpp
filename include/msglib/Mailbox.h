@@ -1,6 +1,7 @@
 #pragma once
 #include "Pool.h"
 #include "Queue.h"
+#include <array>
 #include <condition_variable>
 #include <deque>
 #include <iostream>
@@ -40,9 +41,9 @@ public:
      * @brief Construct a new DataBlock object
      *
      */
-    DataBlock() : m_size(msgSize) { memset(&m_data[0], 0, sizeof(m_data)); }
+    DataBlock() : m_size(msgSize) { memset(m_data.data(), 0, sizeof(m_data)); }
 
-    void *get() override { return &m_data[0]; }
+    void *get() override { return m_data.data(); }
 
     /**
      * @brief Store data into this DataBlock instance from an object of type T
@@ -53,14 +54,14 @@ public:
     template <typename T>
     void put(const T &t) {
         if (sizeof(T) <= sizeof(m_data) && std::is_trivial<T>()) {
-            memcpy(&m_data[0], &t, sizeof(T));
+            memcpy(m_data.data(), &t, sizeof(T));
             m_size = sizeof(T);
         } else {
             throw std::runtime_error("Invalid type for put()");
         }
     }
 
-    size_t size() const { return m_size; }
+    [[nodiscard]] size_t size() const { return m_size; }
 
 private:
     uint16_t m_size;
@@ -365,7 +366,7 @@ public:
 
 private:
     /**
-     * @brief Shared mailbox state among all Mailbox instances
+T     * @brief Shared mailbox state among all Mailbox instances
      */
     static MailboxData s_mailboxData;
 

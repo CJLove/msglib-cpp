@@ -1,10 +1,13 @@
 #include "msglib/TimerManager.h"
 #include "msglib/Mailbox.h"
-#include <thread>
-#include <mutex>
 #include <atomic>
+#include <csignal>
+#include <mutex>
+#include <thread>
 
 namespace msglib {
+
+namespace detail {
 
 /**
  * @brief Timer is a representation of a timer which has been scheduled within the TimerManager
@@ -69,6 +72,7 @@ Timer::~Timer()
     timer_delete(m_timer);
 }
 
+
 struct TimerManagerData::TimerManagerDataImpl {
 
     TimerManagerDataImpl() = default;
@@ -115,7 +119,6 @@ void TimerManagerData::TimerManagerDataImpl::HandleSignals()
         throw std::runtime_error("pthread_sigmask error");
     }
 
-//    std::cout << "Starting signal handling thread\n";
     while (!m_shutdown) {
         siginfo_t info = { };
         int result = sigtimedwait(&sigset, &info, &ts );
@@ -126,7 +129,6 @@ void TimerManagerData::TimerManagerDataImpl::HandleSignals()
             timer->timerEvent();
         }
     }
-//    std::cout << "Exiting signal handling thread\n";
 }
 
 TimerManagerData::TimerManagerData() : m_pImpl(std::make_unique<TimerManagerData::TimerManagerDataImpl>()) {
@@ -154,17 +156,19 @@ void TimerManagerData::cancelTimer(const Label &label) {
     }
 }
 
+} // Namespace detail
+
 /**
  * @brief Static member declaration
  *
  */
-std::unique_ptr<TimerManagerData> TimerManager::s_timerData = std::make_unique<TimerManagerData>();
+std::unique_ptr<detail::TimerManagerData> TimerManager::s_timerData;
+
 
 void TimerManager::Initialize() {
+    s_timerData = std::make_unique<detail::TimerManagerData>();
+    s_timerData->initialize();
     sigset_t sigset;
-    // if (sigfillset(&sigset) != 0) {
-    //     throw std::runtime_error("sigfillset error");
-    // }
     if (sigemptyset(&sigset) != 0) {
         throw std::runtime_error("sigfillset error");
     }
@@ -177,24 +181,35 @@ void TimerManager::Initialize() {
     if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
         throw std::runtime_error("pthread_sigmask error");
     }
-    s_timerData->initialize();
 }
 
 void TimerManager::StartTimer(const Label &label, const timespec &time, const TimerType_e type) {
-    s_timerData->startTimer(label, time, type);
+    if (s_timerData) {
+        s_timerData->startTimer(label, time, type);
+    } else {
+        throw std::runtime_error("TimerManager not initialized");
+    }
 }
 
 void TimerManager::StartTimer(
     const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time) {
-    auto secs = std::chrono::time_point_cast<std::chrono::seconds>(time);
-    auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
-        std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
+    if (s_timerData) {
+        auto secs = std::chrono::time_point_cast<std::chrono::seconds>(time);
+        auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
 
-    s_timerData->startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
+        s_timerData->startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
+    } else {
+        throw std::runtime_error("TimerManager not initialized");
+    }
 }
 
 void TimerManager::CancelTimer(const Label &label) {
-    s_timerData->cancelTimer(label);
+    if (s_timerData) {
+        s_timerData->cancelTimer(label);
+    } else {
+        throw std::runtime_error("TimerManager not initialized");
+    }
 }
 
 }  // Namespace msglib
