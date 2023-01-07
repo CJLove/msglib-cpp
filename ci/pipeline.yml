@@ -51,6 +51,7 @@ jobs:
     trigger: true
   - in_parallel:
     - task: asan
+      privileged: true
       file: msglib-cpp-git/ci/asan.yml
     - task: tsan
       file: msglib-cpp-git/ci/tsan.yml
