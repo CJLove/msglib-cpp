@@ -1,15 +1,15 @@
 #include "gtest/gtest.h"
-
+#include <array>
 #include "msglib/Mailbox.h"
 
-using namespace msglib;
+using namespace msglib; // NOLINT
 
 struct MsgStruct {
     int a;
 };
 
 struct MsgBad {
-    MsgBad(int b) : m_b(b) {
+    explicit MsgBad(int b) : m_b(b) {
     }
     int m_b;
 
@@ -18,7 +18,7 @@ struct MsgBad {
 };
 
 TEST(MailboxText, DataBlock) {
-    using DB = DataBlock<128>;
+    using DB = DataBlock<128>; // NOLINT
 
     DB db;
 
@@ -26,7 +26,7 @@ TEST(MailboxText, DataBlock) {
     EXPECT_NE(nullptr, db.get());
 
     try {
-        MsgStruct m {12345};
+        MsgStruct m {12345}; // NOLINT
 
         db.put(m);
 
@@ -34,7 +34,7 @@ TEST(MailboxText, DataBlock) {
     } catch (std::exception &e) { FAIL() << "unexpected exception " << e.what(); }
 
     try {
-        MsgBad m {666};
+        MsgBad m {666}; // NOLINT
 
         db.put(m);
         FAIL() << "Unexpected successful put()";
@@ -61,7 +61,7 @@ TEST(MailboxTest, MessageTest) {
 
     {
         // Message with data
-        using DB = DataBlock<128>;
+        using DB = DataBlock<128>; // NOLINT
         DB db;
         MsgStruct m {label};
         db.put(m);
@@ -70,10 +70,10 @@ TEST(MailboxTest, MessageTest) {
         EXPECT_EQ(sizeof(m), msg.m_size);
         EXPECT_EQ(&db, msg.m_data);
 
-        auto mPtr = msg.as<MsgStruct>();
+        auto *mPtr = msg.as<MsgStruct>();
         EXPECT_EQ(label, mPtr->a);
 
-        auto badPtr = msg.as<MsgBad>();
+        auto *badPtr = msg.as<MsgBad>();
         EXPECT_EQ(nullptr, badPtr);
     }
 }
@@ -121,13 +121,13 @@ TEST(MailboxTest, Receivers) {
 TEST(MailboxTest, MailboxDataAlloc) {
     MailboxData data;
 
-    MailboxData::SmallBlock *smallBlocks[SMALL_CAP];
+    std::array<MailboxData::SmallBlock*,SMALL_CAP> smallBlocks;
     for (int i = 0; i < SMALL_CAP; i++) {
         smallBlocks[i] = data.getSmall();
         EXPECT_TRUE(smallBlocks[i] != nullptr);
     }
 
-    auto smallPtr = data.getSmall();
+    auto *smallPtr = data.getSmall();
     EXPECT_EQ(nullptr, smallPtr);
 
     for (int i = 0; i < SMALL_CAP; i++) {
@@ -138,13 +138,13 @@ TEST(MailboxTest, MailboxDataAlloc) {
     EXPECT_NE(nullptr, smallPtr);
     data.freeSmall(smallPtr);
 
-    MailboxData::LargeBlock *largeBlocks[LARGE_CAP];
+    std::array<MailboxData::LargeBlock*,LARGE_CAP> largeBlocks;
     for (int i = 0; i < LARGE_CAP; i++) {
         largeBlocks[i] = data.getLarge();
         EXPECT_TRUE(largeBlocks[i] != nullptr);
     }
 
-    auto largePtr = data.getLarge();
+    auto *largePtr = data.getLarge();
     EXPECT_EQ(nullptr, largePtr);
 
     for (int i = 0; i < LARGE_CAP; i++) {
@@ -212,9 +212,9 @@ struct TestMessage {
 };
 
 TEST(MailboxTest, MailboxTest) {
-    Label Msg1 = 555;
-    Label Msg2 = 666;
-    Label Msg3 = 777;
+    Label Msg1 = 555; // NOLINT
+    Label Msg2 = 666; // NOLINT
+    Label Msg3 = 777; // NOLINT
 
     Mailbox mbox1;
     Mailbox mbox2;
@@ -234,7 +234,7 @@ TEST(MailboxTest, MailboxTest) {
         MessageGuard guard(mbox1, msg);
 
         EXPECT_EQ(Msg1, msg.m_label);
-        auto m1Ptr = msg.as<TestMessage>();
+        auto *m1Ptr = msg.as<TestMessage>();
         EXPECT_EQ(3, m1Ptr->a);
         EXPECT_EQ(2, m1Ptr->b);
         EXPECT_EQ(1, m1Ptr->c);
@@ -247,7 +247,7 @@ TEST(MailboxTest, MailboxTest) {
         MessageGuard guard(mbox1, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
-        auto m1Ptr = msg.as<TestMessage>();
+        auto *m1Ptr = msg.as<TestMessage>();
         EXPECT_EQ(3, m1Ptr->a);
         EXPECT_EQ(2, m1Ptr->b);
         EXPECT_EQ(1, m1Ptr->c);
@@ -258,7 +258,7 @@ TEST(MailboxTest, MailboxTest) {
         MessageGuard guard(mbox2, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
-        auto m1Ptr = msg.as<TestMessage>();
+        auto *m1Ptr = msg.as<TestMessage>();
         EXPECT_EQ(3, m1Ptr->a);
         EXPECT_EQ(2, m1Ptr->b);
         EXPECT_EQ(1, m1Ptr->c);

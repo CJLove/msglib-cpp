@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "msglib/Pool.h"
+#include <array>
 #include <thread>
 
 struct TestStruct {
@@ -9,7 +10,7 @@ struct TestStruct {
     TestStruct(int a, int b, int c) : m_a(a), m_b(b), m_c(c) {
     }
 
-    TestStruct(bool except) {
+    explicit TestStruct(bool except) {
         if (except) {
             throw std::runtime_error("expected exception");
         }
@@ -27,9 +28,11 @@ TEST(PoolTest, allocFail) {
 
     try {
         // Throw as part of allocating
-        auto t1 = pool.alloc(true);
+        auto *t1 = pool.alloc(true); // NOLINT
         FAIL() << "expected std::runtime_error()";
-        pool.free(t1);
+        if (t1 != nullptr) {
+            pool.free(t1);
+        }
     }
     catch (std::exception &e) {
 
@@ -42,22 +45,24 @@ TEST(PoolTest, allocFree) {
     EXPECT_EQ(3, pool.capacity());
     EXPECT_EQ(3, pool.size());
 
-    auto t1 = pool.alloc(1, 2, 3);
+    auto *t1 = pool.alloc(1, 2, 3);
     EXPECT_TRUE(t1 != nullptr);
     EXPECT_EQ(2, pool.size());
 
-    auto t2 = pool.alloc(4, 5, 6);
+    auto *t2 = pool.alloc(4, 5, 6); // NOLINT
     EXPECT_TRUE(t2 != nullptr);
     EXPECT_EQ(1, pool.size());
 
-    auto t3 = pool.alloc(7, 8, 9);
+    auto *t3 = pool.alloc(7, 8, 9); // NOLINT
     EXPECT_TRUE(t3 != nullptr);
     EXPECT_EQ(0, pool.size());
 
     try {
-        auto t4 = pool.alloc();
+        auto *t4 = pool.alloc(); // NOLINT
         FAIL() << "expected std::bad_alloc";
-        pool.free(t4);  // NOT REACHED
+        if (t4 != nullptr) {
+            pool.free(t4);  // NOT REACHED
+        }
     } catch (std::bad_alloc &e) {
         // Expect std::bad_alloc to be thrown
     } catch (std::exception &e) { FAIL() << "unexpected exception " << e.what(); }
@@ -74,18 +79,20 @@ TEST(PoolTest, allocFree) {
 }
 
 void testPoolThread(msglib::Pool<TestStruct> *pool) {
-    TestStruct *ptrs[100];
-    for (int i = 0; i < 100; i++) {
+    constexpr int SIZE=100;
+    std::array<TestStruct *,SIZE> ptrs;  
+    for (int i = 0; i < SIZE; i++) {
         ptrs[i] = pool->alloc(i, i + 1, i + 2);
     }
 
-    for (int i = 99; i >= 0; i--) {
+    for (int i = SIZE-1; i >= 0; i--) {
         pool->free(ptrs[i]);
     }
 }
 
 TEST(PoolTest, threads) {
-    msglib::Pool<TestStruct> pool(300);
+    constexpr int SIZE=300;
+    msglib::Pool<TestStruct> pool(SIZE);
 
     try {
         std::cout << "Starting threads\n";

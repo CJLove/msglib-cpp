@@ -4,7 +4,7 @@
 #include <thread>
 #include <mutex>
 
-using namespace msglib;
+using msglib::Queue;
 using namespace std::chrono_literals;
 
 struct TestStruct {
@@ -24,30 +24,15 @@ TEST(QueueTest, pushTests) {
     EXPECT_EQ(0,queue.size());
     EXPECT_TRUE(queue.empty());
 
-    try {
-        queue.push(TestStruct(1,2,3));
-        EXPECT_EQ(1,queue.size());
-        EXPECT_FALSE(queue.empty());
-    } catch (std::exception &e)
-    {
-        FAIL() << "Unexpected exception " << e.what() << "\n";
-    }
+    EXPECT_TRUE(queue.push(TestStruct(1,2,3)));
+    EXPECT_EQ(1,queue.size());
+    EXPECT_FALSE(queue.empty());
 
-    try {
-        queue.emplace(4,5,6);
-        EXPECT_EQ(2,queue.size());
-        EXPECT_FALSE(queue.empty());
-    } catch (std::exception &e) {
-        FAIL() << "Unexpected exception " << e.what() << "\n";
-    }
+    EXPECT_TRUE(queue.emplace(4,5,6));
+    EXPECT_EQ(2,queue.size());
+    EXPECT_FALSE(queue.empty());
 
-    try {
-        queue.emplace(7,8,9);
-        FAIL() << "Unexpected success on push()\n";
-    } catch (std::exception &e) {
-        std::cout << "Caught " << e.what() << " for push() \n";
-    }
-
+    EXPECT_FALSE(queue.emplace(7,8,9));
 }
 
 TEST(QueueTest, tryPopTests) {
@@ -72,7 +57,7 @@ void producer(Queue<TestStruct> &queue)
     std::this_thread::sleep_for(500ms);
     queue.emplace(1,2,3);
 
-    queue.emplace(4,5,6);
+    queue.emplace(4,5,6); // NOLINT
 
 }
 

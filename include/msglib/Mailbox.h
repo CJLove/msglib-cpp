@@ -3,12 +3,12 @@
 #include "Queue.h"
 #include <array>
 #include <condition_variable>
+#include <cstring>
 #include <deque>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
-#include <cstring>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -31,8 +31,8 @@ public:
 
 /**
  * @brief DataBlock is a templated class providing a class capable of storing any message struct up to a specific size.
- * 
- * @tparam msgSize 
+ *
+ * @tparam msgSize
  */
 template <size_t msgSize>
 class DataBlock : public DataBlockBase {
@@ -41,9 +41,13 @@ public:
      * @brief Construct a new DataBlock object
      *
      */
-    DataBlock() : m_size(msgSize) { memset(m_data.data(), 0, sizeof(m_data)); }
+    DataBlock() : m_size(msgSize) {
+        memset(m_data.data(), 0, sizeof(m_data));
+    }
 
-    void *get() override { return m_data.data(); }
+    void *get() override {
+        return m_data.data();
+    }
 
     /**
      * @brief Store data into this DataBlock instance from an object of type T
@@ -53,7 +57,7 @@ public:
      */
     template <typename T>
     void put(const T &t) {
-        if (sizeof(T) <= sizeof(m_data) && std::is_trivial<T>()) {
+        if (sizeof(T) <= sizeof(m_data) && std::is_trivially_copyable<T>()) {
             memcpy(m_data.data(), &t, sizeof(T));
             m_size = sizeof(T);
         } else {
@@ -61,11 +65,13 @@ public:
         }
     }
 
-    [[nodiscard]] size_t size() const { return m_size; }
+    [[nodiscard]] size_t size() const {
+        return m_size;
+    }
 
 private:
     uint16_t m_size;
-    std::array<char,msgSize> m_data;
+    std::array<char, msgSize> m_data;
 };
 
 /**
@@ -80,19 +86,21 @@ public:
 
     /**
      * @brief Construct a new Message object with a specific label and no data
-     * 
+     *
      * @param label - message's label
      */
-    explicit Message(Label label) : m_label(label)  { }
+    explicit Message(Label label) : m_label(label) {
+    }
 
     /**
      * @brief Construct a new Message object with a specific label and amount of message data
-     * 
+     *
      * @param label - message's label
      * @param size - message's size
      * @param data - message's data
      */
-    Message(Label label, uint16_t size, DataBlockBase *data) : m_data(data), m_label(label), m_size(size) { }
+    Message(Label label, uint16_t size, DataBlockBase *data) : m_data(data), m_label(label), m_size(size) {
+    }
 
     /**
      * @brief Return this message instance's data as a pointer to an object of type T
@@ -129,8 +137,10 @@ struct Receivers {
      * @brief Construct a new Receivers object
      */
     Receivers() {
-        m_receivers.resize(MAX_RECEIVERS);
-        m_receivers[0] = m_receivers[1] = m_receivers[2] = nullptr;
+        try {
+            m_receivers.resize(MAX_RECEIVERS);
+            m_receivers[0] = m_receivers[1] = m_receivers[2] = nullptr;
+        } catch (...) { }
     }
 
     /**
@@ -139,9 +149,11 @@ struct Receivers {
      * @param mbox - first receiver
      */
     explicit Receivers(Mailbox *mbox) {
-        m_receivers.resize(MAX_RECEIVERS);
-        m_receivers[0] = mbox;
-        m_receivers[1] = m_receivers[2] = nullptr;
+        try {
+            m_receivers.resize(MAX_RECEIVERS);
+            m_receivers[0] = mbox;
+            m_receivers[1] = m_receivers[2] = nullptr;
+        } catch (...) { }
     }
 
     Receivers &operator=(const Receivers &rhs) {
@@ -196,26 +208,29 @@ public:
     using SmallBlock = DataBlock<SMALL_SIZE>;
     using LargeBlock = DataBlock<LARGE_SIZE>;
 
-    MailboxData() : m_smallPool(SMALL_CAP), m_largePool(LARGE_CAP) { }
+    MailboxData() : m_smallPool(SMALL_CAP), m_largePool(LARGE_CAP) {
+    }
 
     /**
      * @brief Register a Mailbox instance as a receiver for a particular label
      */
-    void RegisterForLabel(Label label, Mailbox *mbox);
+    bool RegisterForLabel(Label label, Mailbox *mbox);
 
     /**
      * @brief Unregister a Mailbox instance as a receiver for a particular label
      */
-    void UnregisterForLabel(Label label, Mailbox *mbox);
+    bool UnregisterForLabel(Label label, Mailbox *mbox);
 
     /**
      * @brief Get the registered receivers for the specified label
-     * 
-     * @return Receivers& 
+     *
+     * @return Receivers&
      */
     Receivers &GetReceivers(Label label);
 
-    std::mutex &GetMutex() { return m_mutex; }
+    std::mutex &GetMutex() {
+        return m_mutex;
+    }
 
     /**
      * @brief Get a small message block from the pool
@@ -239,7 +254,7 @@ public:
 
     /**
      * @brief Free a large message block
-     * 
+     *
      * @param msg - msg to be freed
      */
     void freeLarge(LargeBlock *msg);
@@ -271,6 +286,7 @@ private:
 class Mailbox {
 public:
     const size_t QUEUE_SIZE = 256;
+    
     /**
      * @brief Construct a new Mailbox object
      */
@@ -296,14 +312,14 @@ public:
      *
      * @param label - message label to register
      */
-    void RegisterForLabel(Label label);
+    bool RegisterForLabel(Label label);
 
     /**
      * @brief Cancel registration to receive messages with this label
      *
      * @param label
      */
-    void UnregisterForLabel(Label label);
+    bool UnregisterForLabel(Label label);
 
     /**
      * @brief Release the data block associated with a message
@@ -318,9 +334,9 @@ public:
      * @param t - an instance
      */
     template <typename T>
-    void SendMessage(Label label, const T &t) {
+    bool SendMessage(Label label, const T &t) {
         std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
-        
+
         const auto &receivers = s_mailboxData.GetReceivers(label);
         for (const auto &receiver : receivers.m_receivers) {
             if (receiver == nullptr) {
@@ -332,7 +348,8 @@ public:
                     m->put(t);
                     receiver->m_queue.emplace(label, sizeof(T), m);
                 } else {
-                    throw std::runtime_error("Couldn't get a block");
+                    return false;
+                    //throw std::runtime_error("Couldn't get a block");
                 }
             } else if (sizeof(T) < LARGE_SIZE) {
                 MailboxData::LargeBlock *m = s_mailboxData.getLarge();
@@ -340,12 +357,15 @@ public:
                     m->put(t);
                     receiver->m_queue.emplace(label, sizeof(T), m);
                 } else {
-                    throw std::runtime_error("Couldn't get a block");
+                    return false;
+                    //throw std::runtime_error("Couldn't get a block");
                 }
             } else {
-                throw std::runtime_error("Message too large");
+                return false;
+                //throw std::runtime_error("Message too large");
             }
         }
+        return true;
     }
 
     /**
@@ -353,7 +373,7 @@ public:
      *
      * @param label - signal's label
      */
-    void SendSignal(Label label);
+    bool SendSignal(Label label);
 
     /**
      * @brief Block and wait until a signal/message of a register type is received
@@ -389,15 +409,16 @@ public:
 
     /**
      * @brief Construct a new MessageGuard object for a specific mailbox and message
-     * 
-     * @param mailbox 
-     * @param msg 
+     *
+     * @param mailbox
+     * @param msg
      */
-    MessageGuard(Mailbox &mailbox, Message &msg) : m_mailbox(mailbox), m_msg(msg) { }
+    MessageGuard(Mailbox &mailbox, Message &msg) : m_mailbox(mailbox), m_msg(msg) {
+    }
 
     /**
      * @brief Free any datablock associated with this message
-     * 
+     *
      */
     ~MessageGuard() {
         if (m_msg.m_data != nullptr) {

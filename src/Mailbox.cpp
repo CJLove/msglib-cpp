@@ -8,7 +8,7 @@ namespace msglib {
  */
 MailboxData Mailbox::s_mailboxData;
 
-void MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
+bool MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto f = m_mailboxes.find(label);
     if (f == m_mailboxes.end()) {
@@ -16,12 +16,14 @@ void MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
         m_mailboxes[label] = r;
     } else {
         if (!f->second.add(mbox)) {
-            throw std::runtime_error("Unable to add mailbox as listener");
+            return false;
+            // throw std::runtime_error("Unable to add mailbox as listener");
         }
     }
+    return true;
 }
 
-void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
+bool MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
     std::lock_guard<std::mutex> lock(m_mutex);
     auto f = m_mailboxes.find(label);
     if (f != m_mailboxes.end()) {
@@ -29,6 +31,7 @@ void MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
             m_mailboxes.erase(f);
         }
     }
+    return true;
 }
 
 Receivers &MailboxData::GetReceivers(Label label) {
@@ -65,9 +68,9 @@ Mailbox::Mailbox() : m_queue(QUEUE_SIZE) { }
 
 Mailbox::~Mailbox() = default;
 
-void Mailbox::RegisterForLabel(Label label) { s_mailboxData.RegisterForLabel(label, this); }
+bool Mailbox::RegisterForLabel(Label label) { return s_mailboxData.RegisterForLabel(label, this); }
 
-void Mailbox::UnregisterForLabel(Label label) { s_mailboxData.UnregisterForLabel(label, this); }
+bool Mailbox::UnregisterForLabel(Label label) { return s_mailboxData.UnregisterForLabel(label, this); }
 
 void Mailbox::Receive(Message &msg) {
     m_queue.pop(msg);
@@ -83,7 +86,7 @@ void Mailbox::ReleaseMessage(Message &msg) {
     }
 }
 
-void Mailbox::SendSignal(Label label) {
+bool Mailbox::SendSignal(Label label) {
     std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
     
     const auto &receivers = s_mailboxData.GetReceivers(label);
@@ -94,6 +97,7 @@ void Mailbox::SendSignal(Label label) {
         Message m(label);
         receiver->m_queue.emplace(label);
     }
+    return true;
 }
 
 }  // Namespace msglib

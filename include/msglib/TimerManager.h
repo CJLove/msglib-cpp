@@ -24,9 +24,9 @@ public:
 
     void initialize();
 
-    void startTimer(const Label &label, const timespec &time, const TimerType_e type);
+    bool startTimer(const Label &label, const timespec &time, const TimerType_e type);
 
-    void cancelTimer(const Label &label);
+    bool cancelTimer(const Label &label);
 
 private:
     struct TimerManagerDataImpl;
@@ -42,7 +42,7 @@ private:
  */
 class TimerManager {
 public:
-    static void Initialize();
+    static bool Initialize();
 
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
@@ -51,7 +51,7 @@ public:
      * @param time - time specification of when the timer should fire as POSIX timespec
      * @param type - type of timer to create (default is one-shot)
      */
-    static void StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT);
+    static bool StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT);
 
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
@@ -63,12 +63,13 @@ public:
      * @param type - type of timer to create (default is one-shot)
      */
     template <class T, class P>
-    static void StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
+    static bool StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
         if (s_timerData) {
             auto ts = Chrono2Timespec(time);
-            s_timerData->startTimer(label, ts, type);
+            return s_timerData->startTimer(label, ts, type);
         } else {
-            throw std::runtime_error("TimerManager not initialized");
+            return false; 
+            //throw std::runtime_error("TimerManager not initialized");
         }
     }
 
@@ -78,7 +79,7 @@ public:
      * @param label - label to use for this timer
      * @param time - time expressed as a std::chrono::time_point
      */
-    static void StartTimer(
+    static bool StartTimer(
         const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time);
 
     /**
@@ -86,7 +87,7 @@ public:
      *
      * @param label - timer to be cancelled
      */
-    static void CancelTimer(const Label &label);
+    static bool CancelTimer(const Label &label);
 
 private:
     static std::unique_ptr<detail::TimerManagerData> s_timerData;

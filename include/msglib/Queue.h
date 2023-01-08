@@ -56,14 +56,15 @@ public:
      * @param value - value to be pushed onto the queue
      *
      */
-    void push(T value) {
+    bool push(T value) {
         std::lock_guard<std::mutex> guard(m_mutex);
         if (m_queue.size() < m_capacity) {
             m_queue.push(value);
             m_condVariable.notify_one();
-            return;
+            return true;
         }
-        throw std::runtime_error("Queue full");
+        return false;
+        //throw std::runtime_error("Queue full");
     }
 
     /**
@@ -73,14 +74,15 @@ public:
      * @param args - arguments to construct value in place
      */
     template <typename... Args>
-    void emplace(Args&&... args) {
+    bool emplace(Args&&... args) {
         std::lock_guard<std::mutex> guard(m_mutex);
         if (m_queue.size() < m_capacity) {
             m_queue.emplace(std::forward<Args>(args)...);
             m_condVariable.notify_one();
-            return;
+            return true;
         }
-        throw std::runtime_error("Queue full");
+        return false; 
+        //throw std::runtime_error("Queue full");
     }
 
     /**

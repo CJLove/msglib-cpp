@@ -5,10 +5,14 @@
 #include <thread>
 
 using namespace std::chrono_literals;
-using namespace msglib;
+using msglib::Message;
+using msglib::Mailbox;
+using msglib::Label;
+using msglib::MessageGuard;
+using msglib::TimerManager;
 
-static Label OneShotEvent = 999;
-static Label PeriodicEvent = 998;
+constexpr Label OneShotEvent = 999;
+constexpr Label PeriodicEvent = 998;
 
 struct EventTester {
     int count = 0;
@@ -50,12 +54,12 @@ void RecurringEventTestThread(EventTester &tester) {
 TEST(TimerManager, OneShotPOSIX) {
     TimerManager::Initialize();
 
-    timespec ts {0, 500000000};
+    timespec ts {0, 500000000}; // NOLINT
     EventTester tester;
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(OneShotEvent, ts, ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, ts, msglib::ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
 
@@ -68,7 +72,7 @@ TEST(TimerManager, OneShotChrono) {
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(OneShotEvent, 500ms, ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, 500ms, msglib::ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
 
@@ -96,14 +100,14 @@ TEST(TimerManager, OneShotTimePoint) {
 
 TEST(TimerManager, RecurringPOSIX) {
     const time_t PERIOD = 500L;
-    const unsigned long MSEC2NSEC = 1000000UL;
+    const uint64_t MSEC2NSEC = 1000000UL;
     timespec ts {0, PERIOD * MSEC2NSEC};
 
     EventTester tester;
 
     std::thread evt(RecurringEventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(PeriodicEvent, ts, PERIODIC);
+    TimerManager::StartTimer(PeriodicEvent, ts, msglib::PERIODIC);
 
     std::this_thread::sleep_for(2s);
     TimerManager::CancelTimer(PeriodicEvent);

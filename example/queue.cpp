@@ -2,7 +2,6 @@
 #include <thread>
 #include <chrono>
 
-using namespace msglib;
 using namespace std::chrono_literals;
 
 // Sample code using the Queue template class
@@ -20,7 +19,7 @@ struct Msg {
 
 
 
-void consumer(Queue<Msg> &queue)
+void consumer(msglib::Queue<Msg> &queue)
 {
     Msg msg;
     while (true) {
@@ -30,7 +29,7 @@ void consumer(Queue<Msg> &queue)
 
 }
 
-void producer(Queue<Msg> &queue)
+void producer(msglib::Queue<Msg> &queue)
 {
     int i = 0;
     std::this_thread::sleep_for(1s);
@@ -44,10 +43,9 @@ void producer(Queue<Msg> &queue)
 
 int main(int /* argc */, char ** /* argv */)
 {
-    Queue<Msg> queue(5);
+    constexpr int QUEUE_SIZE = 5;
+    msglib::Queue<Msg> queue(QUEUE_SIZE);
     std::thread t1(consumer,std::ref(queue));
     //std::thread t2(producer,std::ref(queue));
     producer(queue);
-
-
 }
