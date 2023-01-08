@@ -57,12 +57,12 @@ public:
      */
     template <typename T>
     void put(const T &t) {
+        static_assert(std::is_trivially_copyable_v<T>,
+                  "DataBlock requires trivially copyable types");
         if (sizeof(T) <= sizeof(m_data) && std::is_trivially_copyable<T>()) {
             memcpy(m_data.data(), &t, sizeof(T));
             m_size = sizeof(T);
-        } else {
-            throw std::runtime_error("Invalid type for put()");
-        }
+        } 
     }
 
     [[nodiscard]] size_t size() const {

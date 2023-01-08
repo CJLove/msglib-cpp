@@ -33,12 +33,13 @@ TEST(MailboxText, DataBlock) {
         EXPECT_EQ(sizeof(m), db.size());
     } catch (std::exception &e) { FAIL() << "unexpected exception " << e.what(); }
 
-    try {
-        MsgBad m {666}; // NOLINT
+    // Following test is OBE since static_assert(is_trivially_copyable added)
+    // try {
+    //     MsgBad m {666}; // NOLINT
 
-        db.put(m);
-        FAIL() << "Unexpected successful put()";
-    } catch (std::exception &e) { std::cout << "Caught expected exception " << e.what() << "\n"; }
+    //     db.put(m);
+    //     FAIL() << "Unexpected successful put()";
+    // } catch (std::exception &e) { std::cout << "Caught expected exception " << e.what() << "\n"; }
 }
 
 TEST(MailboxTest, MessageTest) {
