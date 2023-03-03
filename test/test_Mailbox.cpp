@@ -25,10 +25,18 @@ struct MsgBad {
 
 struct MsgBig {
     char data[1024];
+
+    MsgBig() {
+        memset(data,0,sizeof(data));
+    }
 };
 
 struct HugeMsg {
     char data[8192];
+
+    HugeMsg() {
+        memset(data,0,sizeof(data));
+    }
 };
 
 class MailboxTest : public ::testing::Test {

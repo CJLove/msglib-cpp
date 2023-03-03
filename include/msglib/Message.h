@@ -43,7 +43,7 @@ public:
      */
     template <typename T>
     T *as() {
-        if (m_data != nullptr && sizeof(T) == m_size && std::is_trivial<T>()) {
+        if (m_data != nullptr && sizeof(T) == m_size && std::is_trivially_copyable<T>()) {
             return reinterpret_cast<T *>(m_data);
         }
         return nullptr;

@@ -57,7 +57,7 @@ bool Mailbox::SendSignal(Label label) {
     const auto &receivers = s_mailboxData.GetReceivers(label);
     for (const auto &receiver : receivers.m_receivers) {
         if (receiver == nullptr) {
-            break;
+            continue;
         }
         Message m(label);
         receiver->m_queue.emplace(label);
