@@ -2,6 +2,7 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 #include <thread>
+#include <unistd.h>
 
 struct Message1 {
     int a;
@@ -126,10 +127,35 @@ void thread3(int inst) {
     mbox.UnregisterForLabel(Exit);
 }
 
-int main(int /* argc */, char ** /* argv */) {
+int main(int argc, char **argv) {
+    size_t smallSize = 128;
+    size_t smallCap = 128;
+    size_t largeSize = 2048;
+    size_t largeCap = 32;
+    int c;
+    while ((c = getopt(argc,argv,"s:S:l:L:?")) != EOF) {
+        switch (c) {
+        case 's':
+            smallSize = std::stoul(optarg,nullptr,10);
+            break;
+        case 'S':
+            smallCap = std::stoul(optarg,nullptr,10);
+            break;
+        case 'l':
+            largeSize = std::stoul(optarg,nullptr,10);
+            break;
+        case 'L':
+            largeCap = std::stoul(optarg,nullptr,10);
+            break;
+        case '?':
+            spdlog::error("Usage:\nmbox -s <smallSize> -S <smallCap> -l <largeSize> -L <largeCap>");
+            exit(1);
+        }
+    }
+
     // Main thread
     msglib::Mailbox mbox;
-    mbox.Initialize();
+    mbox.Initialize(smallSize, smallCap, largeSize, largeCap);
 
     std::thread t1(thread1, 1);
     std::thread t2(thread2, 2);
@@ -158,8 +184,7 @@ int main(int /* argc */, char ** /* argv */) {
         t1.join();
         t2.join();
         t3.join();
-    } catch (std::exception &e) 
-    {
+    } catch (std::exception &e) {
         spdlog::error("Caught exception {} joining threads", e.what());
     }
 

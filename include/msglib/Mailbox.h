@@ -1,9 +1,9 @@
 #pragma once
-#include "detail/BytePool.h"
 #include "Message.h"
-#include "detail/Receiver.h"
-#include "detail/Queue.h"
+#include "detail/BytePool.h"
 #include "detail/MailboxData.h"
+#include "detail/Queue.h"
+#include "detail/Receiver.h"
 #include <array>
 #include <condition_variable>
 #include <cstring>
@@ -25,17 +25,27 @@ using Label = uint16_t;
 class Mailbox {
 public:
     const size_t QUEUE_SIZE = 256;
-    
+
     /**
      * @brief Construct a new Mailbox object
      */
-    Mailbox();
+    Mailbox()
+        : m_storage(std::make_unique<std::byte[]>(QUEUE_SIZE * sizeof(Message)))
+        , m_bytes(&m_storage[0], QUEUE_SIZE * sizeof(Message))
+        , m_resource(&m_bytes)
+        , m_queue(QUEUE_SIZE, &m_resource) {
+    }
 
     /**
      * @brief Construct a new Mailbox
-     * 
+     *
      */
-    explicit Mailbox(size_t queueSize);
+    explicit Mailbox(size_t queueSize)
+        : m_storage(std::make_unique<std::byte[]>(queueSize * sizeof(Message)))
+        , m_bytes(&m_storage[0], queueSize * sizeof(Message))
+        , m_resource(&m_bytes)
+        , m_queue(queueSize, &m_resource) {
+    }
 
     /**
      * @brief Disable copy construction
@@ -52,38 +62,54 @@ public:
      */
     ~Mailbox() = default;
 
-    bool Initialize();
+    bool Initialize() {
+        return s_mailboxData.Initialize();
+    }
 
     /**
      * @brief Initialize mailbox internals with the specified capacities
-     * 
+     *
      * @param smallSize - max size of elements in the "small" pool
      * @param smallCap - capacity of the "small" pool
      * @param largeSize - max size of elements in the "large" pool
      * @param largeCap - capacity of the "large" pool
-     * @return true 
-     * @return false 
+     * @return true
+     * @return false
      */
-    bool Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap);
+    bool Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap) {
+        return s_mailboxData.Initialize(smallSize, smallCap, largeSize, largeCap);
+    }
 
     /**
      * @brief Register to receive messages with this label
      *
      * @param label - message label to register
      */
-    bool RegisterForLabel(Label label);
+    bool RegisterForLabel(Label label) {
+        return s_mailboxData.RegisterForLabel(label, this);
+    }
 
     /**
      * @brief Cancel registration to receive messages with this label
      *
      * @param label
      */
-    bool UnregisterForLabel(Label label);
+    bool UnregisterForLabel(Label label) {
+        return s_mailboxData.UnregisterForLabel(label, this);
+    }
 
     /**
      * @brief Release the data block associated with a message
      */
-    void ReleaseMessage(Message &msg);
+    void ReleaseMessage(Message &msg) {
+        if (msg.m_data != nullptr) {
+            if (msg.m_size <= s_mailboxData.smallSize()) {
+                s_mailboxData.freeSmall(msg.m_data);
+            } else {
+                s_mailboxData.freeLarge(msg.m_data);
+            }
+        }
+    }
 
     /**
      * @brief Send a message with a specific label and associated data of type T
@@ -130,7 +156,19 @@ public:
      *
      * @param label - signal's label
      */
-    bool SendSignal(Label label);
+    bool SendSignal(Label label) {
+        std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
+
+        const auto &receivers = s_mailboxData.GetReceivers(label);
+        for (const auto &receiver : receivers.m_receivers) {
+            if (receiver == nullptr) {
+                continue;
+            }
+            Message m(label);
+            receiver->m_queue.emplace(label);
+        }
+        return true;
+    }
 
     /**
      * @brief Block and wait until a signal/message of a register type is received
@@ -139,13 +177,15 @@ public:
      * @param msg - associated message data, or nullptr for signal
      *              Note: message is owned by the mailbox
      */
-    void Receive(Message &msg);
+    void Receive(Message &msg) {
+        m_queue.pop(msg);
+    }
 
 private:
     /**
      * @brief Shared mailbox state among all Mailbox instances
      */
-    static detail::MailboxData s_mailboxData;
+    inline static detail::MailboxData s_mailboxData;
 
     /**
      * @brief Underlying data for the queue's monotonic buffer resource
