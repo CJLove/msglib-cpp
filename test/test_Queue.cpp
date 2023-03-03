@@ -1,10 +1,10 @@
 #include "gtest/gtest.h"
 
-#include "msglib/Queue.h"
+#include "msglib/detail/Queue.h"
 #include <thread>
 #include <mutex>
 
-using msglib::Queue;
+using msglib::detail::Queue;
 using namespace std::chrono_literals;
 
 struct TestStruct {

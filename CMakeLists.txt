@@ -116,6 +116,12 @@ if (BUILD_TESTS)
   find_package(GTest REQUIRED)
 endif()
 
+# fmt library dependency
+find_package(fmt CONFIG REQUIRED)
+
+# spdlog library dependency
+find_package(spdlog CONFIG REQUIRED)
+
 # clang-tidy
 if(ENABLE_CLANG_TIDY)
   find_program(CLANGTIDY clang-tidy)

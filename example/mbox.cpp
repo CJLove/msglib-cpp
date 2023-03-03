@@ -1,5 +1,6 @@
 #include "msglib/Mailbox.h"
 #include <iostream>
+#include <spdlog/spdlog.h>
 #include <thread>
 
 struct Message1 {
@@ -33,37 +34,36 @@ void displayMsg(const char *thread, msglib::Message &msg) {
     case Msg1: {
         try {
             auto *m1 = msg.as<Message1>();
-            std::cout << "Thread " << thread << " got Msg1 { " << m1->a << " " << m1->b << " " << m1->c << " " << m1->d << " "
-                      << m1->e << " }\n";
+            spdlog::info("Thread {} got Msg1[ {} {} {} {} {} ]", thread, m1->a, m1->b, m1->c, m1->d, m1->e);
         } catch (std::exception &e) {
-            std::cout << "Exception " << e.what() << " getting Message1\n";
+            spdlog::error("Thread {} exception {} getting Message1", thread, e.what());
         }
     } break;
     case Msg2:
         try {
             auto *m2 = msg.as<Message2>();
-            std::cout << "Thread " << thread << " got Msg2 { " << m2->a << " }\n";
+            spdlog::info("Thread {} got Msg2[ {} ]", thread, m2->a);
         } catch (std::exception &e) {
-            std::cout << "Exception " << e.what() << " getting Message2\n";
+            spdlog::error("Thread {} exception {} getting Message2", thread, e.what());
         }
         break;
     case Msg3:
         try {
             auto *t = msg.as<Message3>();
-            std::cout << "Thread " << thread << " got Msg3 { " << t->a << " " << t->b << " " << t->c << " }\n";
+            spdlog::info("Thread {} got Msg3[ {} {} {} ]", thread, t->a, t->b, t->c);
         } catch (std::exception &e) {
-            std::cout << "Exception " << e.what() << " getting Message3\n";
+            spdlog::error("Thread {} exception {} getting Message3", thread, e.what());
         }
         break;
     default:
-        std::cout << "Thread " << thread << " got Signal " << msg.m_label << "\n";
+        spdlog::info("Thread {} got Signal {}", thread, msg.m_label);
         break;
     }
 }
 
 void thread1(int inst) {
     msglib::Mailbox mbox;
-    std::cout << "Thread " << inst << " registering for labels 1 & 2\n";
+    spdlog::info("Thread {} registering for labels 1 & 2", inst);
     mbox.RegisterForLabel(Msg1);
     mbox.RegisterForLabel(Msg2);
     mbox.RegisterForLabel(Exit);
@@ -77,6 +77,7 @@ void thread1(int inst) {
             break;
         }
     }
+    spdlog::info("Thread {} got Exit message", inst);
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg2);
     mbox.UnregisterForLabel(Exit);
@@ -84,7 +85,7 @@ void thread1(int inst) {
 
 void thread2(int inst) {
     msglib::Mailbox mbox;
-    std::cout << "Thread " << inst << " registering for labels 1 & 3\n";
+    spdlog::info("Thread {} registering for labels 1 & 3", inst);
     mbox.RegisterForLabel(Msg1);
     mbox.RegisterForLabel(Msg3);
     mbox.RegisterForLabel(Exit);
@@ -97,6 +98,7 @@ void thread2(int inst) {
             break;
         }
     }
+    spdlog::info("Thread {} got Exit message", inst);
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg3);
     mbox.UnregisterForLabel(Exit);
@@ -104,7 +106,7 @@ void thread2(int inst) {
 
 void thread3(int inst) {
     msglib::Mailbox mbox;
-    std::cout << "Thread " << inst << " registering for labels 4 & 5\n";
+    spdlog::info("Thread {} registering for labels 4 & 5", inst);
     mbox.RegisterForLabel(Msg4);
     mbox.RegisterForLabel(Msg5);
     mbox.RegisterForLabel(Exit);
@@ -118,20 +120,22 @@ void thread3(int inst) {
             break;
         }
     }
+    spdlog::info("Thread {} got Exit message", inst);
     mbox.UnregisterForLabel(Msg1);
     mbox.UnregisterForLabel(Msg3);
     mbox.UnregisterForLabel(Exit);
 }
 
 int main(int /* argc */, char ** /* argv */) {
+    // Main thread
+    msglib::Mailbox mbox;
+    mbox.Initialize();
+
     std::thread t1(thread1, 1);
     std::thread t2(thread2, 2);
     std::thread t3(thread3, 3);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    // Main thread
-    msglib::Mailbox mbox;
 
     Message3 msg3 {1, 2, 3};
     mbox.SendMessage(Msg3, msg3);
@@ -151,10 +155,14 @@ int main(int /* argc */, char ** /* argv */) {
     mbox.SendSignal(Exit);
 
     try {
-    t1.join();
-    t2.join();
-    t3.join();
-    } catch (...) {}
+        t1.join();
+        t2.join();
+        t3.join();
+    } catch (std::exception &e) 
+    {
+        spdlog::error("Caught exception {} joining threads", e.what());
+    }
 
+    spdlog::info("Exiting main()");
     return 0;
 }

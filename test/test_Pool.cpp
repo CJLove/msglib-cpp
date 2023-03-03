@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "msglib/Pool.h"
+#include "msglib/detail/Pool.h"
 #include <array>
 #include <thread>
 

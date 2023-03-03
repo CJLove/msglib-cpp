@@ -1,6 +1,9 @@
 #pragma once
-#include "Pool.h"
-#include "Queue.h"
+#include "detail/BytePool.h"
+#include "Message.h"
+#include "detail/Receiver.h"
+#include "detail/Queue.h"
+#include "detail/MailboxData.h"
 #include <array>
 #include <condition_variable>
 #include <cstring>
@@ -11,274 +14,10 @@
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
-#include <vector>
 
 namespace msglib {
 
 using Label = uint16_t;
-static const Label LARGE_SIZE = 2048;
-static const Label SMALL_SIZE = 256;
-static const Label LARGE_CAP = 200;
-static const Label SMALL_CAP = 200;
-
-/**
- * @brief DataBlockBase provides a common interface for all instantiations of the DataBlock template class
- */
-class DataBlockBase {
-public:
-    virtual void *get() = 0;
-};
-
-/**
- * @brief DataBlock is a templated class providing a class capable of storing any message struct up to a specific size.
- *
- * @tparam msgSize
- */
-template <size_t msgSize>
-class DataBlock : public DataBlockBase {
-public:
-    /**
-     * @brief Construct a new DataBlock object
-     *
-     */
-    DataBlock() : m_size(msgSize) {
-        memset(m_data.data(), 0, sizeof(m_data));
-    }
-
-    void *get() override {
-        return m_data.data();
-    }
-
-    /**
-     * @brief Store data into this DataBlock instance from an object of type T
-     *
-     * @tparam T - a POD type
-     * @param t - source of message data
-     */
-    template <typename T>
-    void put(const T &t) {
-        static_assert(std::is_trivially_copyable_v<T>,
-                  "DataBlock requires trivially copyable types");
-        if (sizeof(T) <= sizeof(m_data) && std::is_trivially_copyable<T>()) {
-            memcpy(m_data.data(), &t, sizeof(T));
-            m_size = sizeof(T);
-        } 
-    }
-
-    [[nodiscard]] size_t size() const {
-        return m_size;
-    }
-
-private:
-    uint16_t m_size;
-    std::array<char, msgSize> m_data;
-};
-
-/**
- * @brief Message is a representation of any message sent or received via a mailbox.
- */
-struct Message {
-public:
-    /**
-     * @brief Construct a new Message object
-     */
-    Message() = default;
-
-    /**
-     * @brief Construct a new Message object with a specific label and no data
-     *
-     * @param label - message's label
-     */
-    explicit Message(Label label) : m_label(label) {
-    }
-
-    /**
-     * @brief Construct a new Message object with a specific label and amount of message data
-     *
-     * @param label - message's label
-     * @param size - message's size
-     * @param data - message's data
-     */
-    Message(Label label, uint16_t size, DataBlockBase *data) : m_data(data), m_label(label), m_size(size) {
-    }
-
-    /**
-     * @brief Return this message instance's data as a pointer to an object of type T
-     *
-     * @tparam T - a POD type
-     * @return T - result of the conversion, or nullptr for a size mismatch or invalid type
-     */
-    template <typename T>
-    T *as() {
-        if (m_data != nullptr && sizeof(T) == m_size && std::is_trivial<T>()) {
-            return static_cast<T *>(m_data->get());
-        }
-        return nullptr;
-    }
-
-    DataBlockBase *m_data = nullptr;
-    Label m_label = 0;
-    uint16_t m_size = 0;
-};
-
-/**
- * @brief Forward declaration of Mailbox class
- */
-class Mailbox;
-
-/**
- * @brief Receivers is a struct holding up to X (default 3) mailbox receivers for a particular event label
- */
-struct Receivers {
-    std::vector<Mailbox *> m_receivers;
-    const size_t MAX_RECEIVERS = 3;
-
-    /**
-     * @brief Construct a new Receivers object
-     */
-    Receivers() {
-        try {
-            m_receivers.resize(MAX_RECEIVERS);
-            m_receivers[0] = m_receivers[1] = m_receivers[2] = nullptr;
-        } catch (...) { }
-    }
-
-    /**
-     * @brief Construct a new Receivers object and add the first receiver
-     *
-     * @param mbox - first receiver
-     */
-    explicit Receivers(Mailbox *mbox) {
-        try {
-            m_receivers.resize(MAX_RECEIVERS);
-            m_receivers[0] = mbox;
-            m_receivers[1] = m_receivers[2] = nullptr;
-        } catch (...) { }
-    }
-
-    Receivers &operator=(const Receivers &rhs) {
-        if (&rhs != this) {
-            m_receivers = rhs.m_receivers;
-        }
-        return *this;
-    }
-
-    /**
-     * @brief Add a receiver for this label
-     *
-     * @param mbox - receiver to be added
-     * @return true - receiver was added successfully
-     * @return false - receiver was not added (capacity reached)
-     */
-    bool add(Mailbox *mbox) {
-        for (auto &r : m_receivers) {
-            if (r == nullptr) {
-                r = mbox;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @brief Remove a receiver for this label
-     *
-     * @param mbox - receiver to be removed
-     * @return true - this was the last receiver for this label
-     * @return false - one or more receivers remain for this label
-     */
-    bool remove(Mailbox *mbox) {
-        bool remove = true;
-        for (size_t i = 0; i < MAX_RECEIVERS; i++) {
-            if (m_receivers[i] == mbox) {
-                m_receivers[i] = nullptr;
-            }
-            // If no mailboxes remain for this label then it should be removed
-            remove &= (m_receivers[i] == nullptr);
-        }
-        return remove;
-    }
-};
-
-/**
- * @brief MailboxData represents data shared among all mailbox instances.
- */
-class MailboxData {
-public:
-    using SmallBlock = DataBlock<SMALL_SIZE>;
-    using LargeBlock = DataBlock<LARGE_SIZE>;
-
-    MailboxData() : m_smallPool(SMALL_CAP), m_largePool(LARGE_CAP) {
-    }
-
-    /**
-     * @brief Register a Mailbox instance as a receiver for a particular label
-     */
-    bool RegisterForLabel(Label label, Mailbox *mbox);
-
-    /**
-     * @brief Unregister a Mailbox instance as a receiver for a particular label
-     */
-    bool UnregisterForLabel(Label label, Mailbox *mbox);
-
-    /**
-     * @brief Get the registered receivers for the specified label
-     *
-     * @return Receivers&
-     */
-    Receivers &GetReceivers(Label label);
-
-    std::mutex &GetMutex() {
-        return m_mutex;
-    }
-
-    /**
-     * @brief Get a small message block from the pool
-     *
-     * @return SmallMsg* - small message or nullptr
-     */
-    SmallBlock *getSmall();
-
-    /**
-     * @brief Free a small message block
-     *
-     */
-    void freeSmall(SmallBlock *msg);
-
-    /**
-     * @brief Get a large message block from the pool
-     *
-     * @return LargeMsg* - large message or nullptr
-     */
-    LargeBlock *getLarge();
-
-    /**
-     * @brief Free a large message block
-     *
-     * @param msg - msg to be freed
-     */
-    void freeLarge(LargeBlock *msg);
-
-private:
-    using Mailboxes = std::unordered_map<Label, Receivers>;
-
-    /**
-     * @brief State information for mailbox registration
-     */
-    std::mutex m_mutex;
-    Mailboxes m_mailboxes;
-
-    /**
-     * @brief Pools of small and large message blocks
-     */
-    Pool<SmallBlock> m_smallPool;
-    Pool<LargeBlock> m_largePool;
-
-    /**
-     * @brief Empty set of receivers, used for unknown labels
-     */
-    Receivers m_receivers;
-};
 
 /**
  * @brief Mailbox provides interfaces for sending and receiving messages to one or more subscribers
@@ -293,6 +32,12 @@ public:
     Mailbox();
 
     /**
+     * @brief Construct a new Mailbox
+     * 
+     */
+    explicit Mailbox(size_t queueSize);
+
+    /**
      * @brief Disable copy construction
      */
     Mailbox(const Mailbox &) = delete;
@@ -305,7 +50,21 @@ public:
     /**
      * @brief Destroy the Mailbox object
      */
-    ~Mailbox();
+    ~Mailbox() = default;
+
+    bool Initialize();
+
+    /**
+     * @brief Initialize mailbox internals with the specified capacities
+     * 
+     * @param smallSize - max size of elements in the "small" pool
+     * @param smallCap - capacity of the "small" pool
+     * @param largeSize - max size of elements in the "large" pool
+     * @param largeCap - capacity of the "large" pool
+     * @return true 
+     * @return false 
+     */
+    bool Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap);
 
     /**
      * @brief Register to receive messages with this label
@@ -342,27 +101,23 @@ public:
             if (receiver == nullptr) {
                 break;
             }
-            if (sizeof(T) < SMALL_SIZE) {
-                MailboxData::SmallBlock *m = s_mailboxData.getSmall();
-                if (m) {
-                    m->put(t);
-                    receiver->m_queue.emplace(label, sizeof(T), m);
-                } else {
-                    return false;
-                    //throw std::runtime_error("Couldn't get a block");
-                }
-            } else if (sizeof(T) < LARGE_SIZE) {
-                MailboxData::LargeBlock *m = s_mailboxData.getLarge();
-                if (m) {
-                    m->put(t);
-                    receiver->m_queue.emplace(label, sizeof(T), m);
-                } else {
-                    return false;
-                    //throw std::runtime_error("Couldn't get a block");
-                }
-            } else {
+            if (sizeof(T) > s_mailboxData.largeSize()) {
                 return false;
-                //throw std::runtime_error("Message too large");
+            }
+            detail::DataBlock db;
+            if (sizeof(T) <= s_mailboxData.smallSize()) {
+                db = s_mailboxData.allocateSmall();
+            } else {
+                db = s_mailboxData.allocateLarge();
+            }
+            if (db.get() != nullptr) {
+                if (db.put(t)) {
+                    receiver->m_queue.emplace(label, sizeof(T), db.get());
+                    return true;
+                } else {
+                    s_mailboxData.freeSmall(db.get());
+                    return false;
+                }
             }
         }
         return true;
@@ -386,14 +141,29 @@ public:
 
 private:
     /**
-T     * @brief Shared mailbox state among all Mailbox instances
+     * @brief Shared mailbox state among all Mailbox instances
      */
-    static MailboxData s_mailboxData;
+    static detail::MailboxData s_mailboxData;
+
+    /**
+     * @brief Underlying data for the queue's monotonic buffer resource
+     */
+    std::unique_ptr<std::byte[]> m_storage;
+
+    /**
+     * @brief Monotonic buffer resource supporting this instance's queue
+     */
+    std::pmr::monotonic_buffer_resource m_bytes;
+
+    /**
+     * @brief Synchronized pool resource supporting this instance's queue
+     */
+    std::pmr::synchronized_pool_resource m_resource;
 
     /**
      * @brief Queue for this instance of the Mailbox class
      */
-    Queue<Message> m_queue;
+    detail::Queue<Message> m_queue;
 };
 
 /**

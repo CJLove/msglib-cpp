@@ -1,4 +1,5 @@
 #include "msglib/Mailbox.h"
+#include "msglib/detail/MailboxData.h"
 
 namespace msglib {
 
@@ -6,67 +7,31 @@ namespace msglib {
  * @brief Static member declaration
  *
  */
-MailboxData Mailbox::s_mailboxData;
+detail::MailboxData Mailbox::s_mailboxData;
 
-bool MailboxData::RegisterForLabel(Label label, Mailbox *mbox) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto f = m_mailboxes.find(label);
-    if (f == m_mailboxes.end()) {
-        Receivers r(mbox);
-        m_mailboxes[label] = r;
-    } else {
-        if (!f->second.add(mbox)) {
-            return false;
-            // throw std::runtime_error("Unable to add mailbox as listener");
-        }
-    }
-    return true;
+Mailbox::Mailbox() : 
+    m_storage(std::make_unique<std::byte[]>(QUEUE_SIZE * sizeof(Message))),
+    m_bytes(&m_storage[0],QUEUE_SIZE * sizeof(Message)),
+    m_resource(&m_bytes),
+    m_queue(QUEUE_SIZE, &m_resource) 
+{ }
+
+Mailbox::Mailbox(size_t size):
+    m_storage(std::make_unique<std::byte[]>(size * sizeof(Message))),
+    m_bytes(&m_storage[0],size * sizeof(Message)),
+    m_resource(&m_bytes),
+    m_queue(size, &m_resource) 
+{ }   
+
+bool Mailbox::Initialize()
+{
+    return s_mailboxData.Initialize();
 }
 
-bool MailboxData::UnregisterForLabel(Label label, Mailbox *mbox) {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    auto f = m_mailboxes.find(label);
-    if (f != m_mailboxes.end()) {
-        if (f->second.remove(mbox)) {
-            m_mailboxes.erase(f);
-        }
-    }
-    return true;
+bool Mailbox::Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap)
+{
+    return s_mailboxData.Initialize(smallSize, smallCap, largeSize, largeCap);
 }
-
-Receivers &MailboxData::GetReceivers(Label label) {
-    auto f = m_mailboxes.find(label);
-    if (f != m_mailboxes.end()) {
-        return f->second;
-    }
-    return m_receivers;
-}
-
-MailboxData::SmallBlock *MailboxData::getSmall() { 
-    try {
-        return m_smallPool.alloc(); 
-    }
-    catch (std::exception &) {
-        return nullptr;
-    }
-}
-
-void MailboxData::freeSmall(MailboxData::SmallBlock *msg) { m_smallPool.free(msg); }
-
-MailboxData::LargeBlock *MailboxData::getLarge() { 
-    try {
-        return m_largePool.alloc(); 
-    }
-    catch (std::exception &) {
-        return nullptr;
-    }
-}
-
-void MailboxData::freeLarge(MailboxData::LargeBlock *msg) { m_largePool.free(msg); }
-
-Mailbox::Mailbox() : m_queue(QUEUE_SIZE) { }
-
-Mailbox::~Mailbox() = default;
 
 bool Mailbox::RegisterForLabel(Label label) { return s_mailboxData.RegisterForLabel(label, this); }
 
@@ -78,10 +43,10 @@ void Mailbox::Receive(Message &msg) {
 
 void Mailbox::ReleaseMessage(Message &msg) {
     if (msg.m_data != nullptr) {
-        if (msg.m_size < SMALL_SIZE) {
-            s_mailboxData.freeSmall(reinterpret_cast<MailboxData::SmallBlock *>(msg.m_data));
+        if (msg.m_size <= s_mailboxData.smallSize()) {
+            s_mailboxData.freeSmall(msg.m_data);
         } else {
-            s_mailboxData.freeLarge(reinterpret_cast<MailboxData::LargeBlock *>(msg.m_data));
+            s_mailboxData.freeLarge(msg.m_data);
         }
     }
 }

@@ -1,6 +1,7 @@
 
 #include "msglib/Mailbox.h"
 #include "msglib/TimerManager.h"
+#include <spdlog/spdlog.h>
 #include <iostream>
 #include <thread>
 
@@ -14,7 +15,7 @@ void thread1(int inst)
 {
     const int MAX_EVENTS = 10;
     msglib::Mailbox mbox;
-    std::cout << "Thread " << inst << " registering for RECURRING_TIMER\n";
+    spdlog::info("Thread {} registering for RECURRING_TIMER", inst);
     mbox.RegisterForLabel(RECURRING_TIMER);
     mbox.RegisterForLabel(EXIT_THREAD);
     unsigned count = 0;
@@ -26,14 +27,14 @@ void thread1(int inst)
         mbox.Receive(msg);
         if (msg.m_label == RECURRING_TIMER) {
             ++count;
-            std::cout << "Received RECURRING_TIMER event " << count << "\n";
+            spdlog::info("Thread {} received RECURRING_TIMER event {}", inst, count);
 
             if (count == MAX_EVENTS) {
                 mbox.SendSignal(DONE);
             }
             mbox.ReleaseMessage(msg);
         } else if (msg.m_label == EXIT_THREAD) {
-            std::cout << "Thread " << inst << " received EXIT_THREAD\n";
+            spdlog::info("Thread {} received EXIT_THREAD", inst);
             mbox.ReleaseMessage(msg);
             break;
         }
@@ -45,7 +46,7 @@ void thread1(int inst)
 void thread2(int inst)
 {
     msglib::Mailbox mbox;
-    std::cout << "Thread " << inst << " registering for ONE_SHOT\n";
+    spdlog::info("Thread {} registering for ONE_SHOT", inst);
     mbox.RegisterForLabel(ONE_SHOT_TIMER);
     mbox.RegisterForLabel(EXIT_THREAD);
     unsigned count = 0;
@@ -57,11 +58,11 @@ void thread2(int inst)
         mbox.Receive(msg);
         if (msg.m_label == ONE_SHOT_TIMER) {
             count++;
-            std::cout << "Received ONE_SHOT event " << count << "\n";
+            spdlog::info("Thread {} received ONE_SHOT event", inst, count);
             mbox.ReleaseMessage(msg);
 
         } else if (msg.m_label == EXIT_THREAD) {
-            std::cout << "Thread " << inst << " received EXIT_THREAD\n";
+            spdlog::info("Thread {} received EXIT_THREAD", inst);
             mbox.ReleaseMessage(msg);
             break;
         }
@@ -75,9 +76,13 @@ int main(int /* argc */, char ** /* argv */)
 {
     using namespace std::chrono_literals;
 
+    spdlog::info("Initializing Mailbox subsystem");
+    msglib::Mailbox mbox;
+    mbox.Initialize();
+
     const time_t PERIOD = 750;  // msec
     const ulong MSEC_TO_NS = 1000000;
-    std::cout << "Calling Initialize()\n";
+    spdlog::info("Initializing Timer subsystem");
     msglib::TimerManager::Initialize();
 
     std::thread t1(thread1,1);
@@ -90,22 +95,21 @@ int main(int /* argc */, char ** /* argv */)
     // Start a one-shot timer using a std::chrono::duration value in msec (literal form)
     msglib::TimerManager::StartTimer(ONE_SHOT_TIMER, 900ms, msglib::ONE_SHOT);
 
-    msglib::Mailbox mbox;
     mbox.RegisterForLabel(DONE);
     while (true) {
         msglib::Message msg;
         mbox.Receive(msg);
         msglib::MessageGuard guard(mbox,msg);
         if (msg.m_label == DONE) {
-            std::cout << "Cancelling RECURRING_TIMER\n";
+            spdlog::info("Cancelling RECURRING_TIMER");
             msglib::TimerManager::CancelTimer(RECURRING_TIMER);
             break;
         }
     }
     mbox.SendSignal(EXIT_THREAD);
 
-    std::cout << "Joining threads\n";
+    spdlog::info("Joining threads");
     t1.join();
     t2.join();
-    std::cout << "Done\n";
+    spdlog::info("Done joining threads, exiting main()");
 }
