@@ -111,9 +111,13 @@ public:
     bool Initialize() {
         try {
             std::lock_guard<std::mutex> guard(m_mutex);
-            m_resources = std::make_unique<Resources>(SMALL_SIZE, SMALL_CAP, LARGE_SIZE, LARGE_CAP);
-            m_initialized = true;
-            std::cout << "Initialized with default capacities\n";
+            if (!m_initialized) {
+                m_resources = std::make_unique<Resources>(SMALL_SIZE, SMALL_CAP, LARGE_SIZE, LARGE_CAP);
+                m_initialized = true;
+            }
+            else {
+                return false;
+            }
         } catch (std::exception &e) {
             return false;
         }
@@ -126,7 +130,6 @@ public:
             if (!m_initialized) {
                 m_resources = std::make_unique<Resources>(smallSize, smallCap, largeSize, largeCap);
                 m_initialized = true;
-                std::cout << "Initialized with custom capacities\n";
             }
             else {
                 // Already initialized

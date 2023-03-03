@@ -19,11 +19,11 @@ include_directories(
 )
 
 set ( msglibTests_SRC 
-    test_Pool.cpp 
     test_TimeConv.cpp
-    test_Mailbox.cpp
     test_Timers.cpp
     test_Queue.cpp
+    test_Pool.cpp 
+    test_Mailbox.cpp
 )
 
 add_executable ( msglibTests ${msglibTests_SRC} )

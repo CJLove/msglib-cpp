@@ -95,32 +95,34 @@ public:
     template <typename T>
     bool SendMessage(Label label, const T &t) {
         std::lock_guard<std::mutex> guard(s_mailboxData.GetMutex());
-
+        bool result = true;
+        if (sizeof(T) > s_mailboxData.largeSize()) {
+            return false;
+        }
+        bool isLarge = (sizeof(T) > s_mailboxData.smallSize());
         const auto &receivers = s_mailboxData.GetReceivers(label);
         for (const auto &receiver : receivers.m_receivers) {
             if (receiver == nullptr) {
-                break;
-            }
-            if (sizeof(T) > s_mailboxData.largeSize()) {
-                return false;
+                continue;
             }
             detail::DataBlock db;
-            if (sizeof(T) <= s_mailboxData.smallSize()) {
-                db = s_mailboxData.allocateSmall();
-            } else {
+            if (isLarge) {
                 db = s_mailboxData.allocateLarge();
+            } else {
+                db = s_mailboxData.allocateSmall();
             }
             if (db.get() != nullptr) {
                 if (db.put(t)) {
-                    receiver->m_queue.emplace(label, sizeof(T), db.get());
-                    return true;
+                    result &= receiver->m_queue.emplace(label, sizeof(T), db.get());
                 } else {
                     s_mailboxData.freeSmall(db.get());
-                    return false;
+                    result = false;
                 }
+            } else {
+                result = false;
             }
         }
-        return true;
+        return result;
     }
 
     /**

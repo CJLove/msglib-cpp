@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     std::pmr::synchronized_pool_resource poolResource(&monotonicResource);
 
     spdlog::info("msglib::detail::BytePool({},{})", capacity, elementSize);
-    msglib::detail::BytePool pool(capacity, elementSize, &poolResource);
+    msglib::detail::BytePool pool(elementSize, capacity, &poolResource);
 
     std::vector<msglib::detail::DataBlock> elements;
     elements.resize(capacity);

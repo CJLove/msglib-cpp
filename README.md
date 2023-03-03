@@ -1,11 +1,18 @@
 # msglib-cpp
 
-Mailbox messaging and timer support for C++17 and up
+The msglib-cpp header-only library supports asynchronous messaging and signalling between threads within a process.
 
-See the `pre-cpp17` branch
+## Features
+- No post-initialization dynamic memory allocation. C++17 std::pmr allocators are used to perform all memory allocation from
+  pools allocated at initialization time.
+
+## Concepts
+- Label - a label is an arbitrary 16-bit value identifying a signal or message type
+- Message - a message is a simple data structure (think C/C++ struct) defining data to be exchanged between threads.
+- Signal - a signal is either an immediate or scheduled trigger for another thread to take action.
 
 ## TODO
-- Add `Mailbox::initialize()` to be called from `main()` with sizing arguments and as trigger for initializing static data.
-- static types are problematic if they throw (`s_mailboxData`)
-- Switch to pmr allocator for pool
+- tsan testing
+- TimerManager refactoring
+- finish changes to be header-only
 - Refactor to hide more details currently exposed in Mailbox.h and so details like Pool.h and Queue.h aren't public

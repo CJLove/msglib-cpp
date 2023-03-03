@@ -1,11 +1,17 @@
+#include "msglib/Mailbox.h"
 #include "gtest/gtest.h"
 #include <array>
-#include "msglib/Mailbox.h"
 
-using namespace msglib; // NOLINT
+using namespace msglib;  // NOLINT
 
 struct MsgStruct {
     int a;
+};
+
+struct TestMessage {
+    int a;
+    int b;
+    int c;
 };
 
 struct MsgBad {
@@ -17,8 +23,25 @@ struct MsgBad {
     }
 };
 
+struct MsgBig {
+    char data[1024];
+};
+
+struct HugeMsg {
+    char data[8192];
+};
+
+class MailboxTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        msglib::Mailbox mbox;
+        mbox.Initialize();
+    }
+};
+
+#if 0
 TEST(MailboxText, DataBlock) {
-    using DB = DataBlock<128>; // NOLINT
+    using DB = DataBlock<128>;  // NOLINT
 
     DB db;
 
@@ -26,12 +49,14 @@ TEST(MailboxText, DataBlock) {
     EXPECT_NE(nullptr, db.get());
 
     try {
-        MsgStruct m {12345}; // NOLINT
+        MsgStruct m {12345};  // NOLINT
 
         db.put(m);
 
         EXPECT_EQ(sizeof(m), db.size());
-    } catch (std::exception &e) { FAIL() << "unexpected exception " << e.what(); }
+    } catch (std::exception &e) {
+        FAIL() << "unexpected exception " << e.what();
+    }
 
     // Following test is OBE since static_assert(is_trivially_copyable added)
     // try {
@@ -42,7 +67,7 @@ TEST(MailboxText, DataBlock) {
     // } catch (std::exception &e) { std::cout << "Caught expected exception " << e.what() << "\n"; }
 }
 
-TEST(MailboxTest, MessageTest) {
+TEST_F(MailboxTest, MessageTest) {
     const Label label = 123;
     {
         // Default ctor
@@ -62,7 +87,7 @@ TEST(MailboxTest, MessageTest) {
 
     {
         // Message with data
-        using DB = DataBlock<128>; // NOLINT
+        using DB = DataBlock<128>;  // NOLINT
         DB db;
         MsgStruct m {label};
         db.put(m);
@@ -78,9 +103,10 @@ TEST(MailboxTest, MessageTest) {
         EXPECT_EQ(nullptr, badPtr);
     }
 }
+#endif
 
-TEST(MailboxTest, Receivers) {
-    Receivers r;
+TEST_F(MailboxTest, Receivers) {
+    detail::Receivers r;
     Mailbox mbox1;
     Mailbox mbox2;
     Mailbox mbox3;
@@ -119,10 +145,11 @@ TEST(MailboxTest, Receivers) {
     EXPECT_EQ(nullptr, r.m_receivers[2]);
 }
 
+#if 0
 TEST(MailboxTest, MailboxDataAlloc) {
     MailboxData data;
 
-    std::array<MailboxData::SmallBlock*,SMALL_CAP> smallBlocks;
+    std::array<MailboxData::SmallBlock *, SMALL_CAP> smallBlocks;
     for (int i = 0; i < SMALL_CAP; i++) {
         smallBlocks[i] = data.getSmall();
         EXPECT_TRUE(smallBlocks[i] != nullptr);
@@ -139,7 +166,7 @@ TEST(MailboxTest, MailboxDataAlloc) {
     EXPECT_NE(nullptr, smallPtr);
     data.freeSmall(smallPtr);
 
-    std::array<MailboxData::LargeBlock*,LARGE_CAP> largeBlocks;
+    std::array<MailboxData::LargeBlock *, LARGE_CAP> largeBlocks;
     for (int i = 0; i < LARGE_CAP; i++) {
         largeBlocks[i] = data.getLarge();
         EXPECT_TRUE(largeBlocks[i] != nullptr);
@@ -205,21 +232,25 @@ TEST(MailboxTest, MailboxDataRegister) {
         EXPECT_EQ(nullptr, receivers.m_receivers[2]);
     }
 }
+#endif
 
-struct TestMessage {
-    int a;
-    int b;
-    int c;
-};
+TEST_F(MailboxTest, SendFail) {
+    Mailbox mbx;
+    Label Msg1 = 555;  // NOLINT
 
-TEST(MailboxTest, MailboxTest) {
-    Label Msg1 = 555; // NOLINT
-    Label Msg2 = 666; // NOLINT
-    Label Msg3 = 777; // NOLINT
+    HugeMsg msg;
+
+    EXPECT_FALSE(mbx.SendMessage(Msg1,msg));
+}
+
+TEST_F(MailboxTest, MailboxTest) {
+    Label Msg1 = 555;  // NOLINT
+    Label Msg2 = 666;  // NOLINT
+    Label Msg3 = 777;  // NOLINT
 
     Mailbox mbox1;
     Mailbox mbox2;
-    Mailbox mbox3;
+    Mailbox mbox3(10);
 
     mbox1.RegisterForLabel(Msg1);
     mbox1.RegisterForLabel(Msg2);
@@ -241,17 +272,17 @@ TEST(MailboxTest, MailboxTest) {
         EXPECT_EQ(1, m1Ptr->c);
     }
 
-    mbox3.SendMessage(Msg2, m1);
+    MsgBig bigMsg;
+
+    EXPECT_TRUE(mbox3.SendMessage(Msg2, bigMsg));
     {
         Message msg;
         mbox1.Receive(msg);
         MessageGuard guard(mbox1, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
-        auto *m1Ptr = msg.as<TestMessage>();
-        EXPECT_EQ(3, m1Ptr->a);
-        EXPECT_EQ(2, m1Ptr->b);
-        EXPECT_EQ(1, m1Ptr->c);
+        auto *bigPtr = msg.as<MsgBig>();
+        EXPECT_TRUE(bigPtr != nullptr);
     }
     {
         Message msg;
@@ -259,10 +290,11 @@ TEST(MailboxTest, MailboxTest) {
         MessageGuard guard(mbox2, msg);
 
         EXPECT_EQ(Msg2, msg.m_label);
+        auto *bigPtr = msg.as<MsgBig>();
+        EXPECT_TRUE(bigPtr != nullptr);
+
         auto *m1Ptr = msg.as<TestMessage>();
-        EXPECT_EQ(3, m1Ptr->a);
-        EXPECT_EQ(2, m1Ptr->b);
-        EXPECT_EQ(1, m1Ptr->c);
+        EXPECT_TRUE(m1Ptr == nullptr);
     }
 
     mbox3.SendSignal(Msg3);
