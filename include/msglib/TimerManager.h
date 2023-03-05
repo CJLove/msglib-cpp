@@ -1,6 +1,17 @@
 #pragma once
+
+namespace msglib {
+
+/**
+ * @brief Types of timers
+ */
+enum TimerType_e { PERIODIC, ONE_SHOT };
+
+}
+
 #include "Mailbox.h"
 #include "TimeConv.h"
+#include "detail/TimerManagerData.h"
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -8,41 +19,32 @@
 namespace msglib {
 
 /**
- * @brief Types of timers
- *
- */
-enum TimerType_e { PERIODIC, ONE_SHOT };
-
-namespace detail {
-/**
- * @brief TimerManagerData is the centralized representation of all timers managed by
- *        the TimerManager.
- */
-class TimerManagerData {
-public:
-    TimerManagerData();
-
-    void initialize();
-
-    bool startTimer(const Label &label, const timespec &time, const TimerType_e type);
-
-    bool cancelTimer(const Label &label);
-
-private:
-    struct TimerManagerDataImpl;
-    std::unique_ptr<TimerManagerDataImpl> m_pImpl;
-};
-
-} // Namespace detail
-
-/**
  * @brief TimerManager supports one-shot and recurring timers which result in specific signals being sent
  *        as signals to the mailbox for processing by other thread(s)
- *
  */
 class TimerManager {
 public:
-    static bool Initialize();
+    static bool Initialize() {
+        sigset_t sigset;
+        if (sigemptyset(&sigset) != 0) {
+            return false;
+            // throw std::runtime_error("sigfillset error");
+        }
+        if (sigaddset(&sigset, SIGRTMIN) != 0) {
+            return false;
+            // throw std::runtime_error("sigaddset error");
+        }
+        if (sigprocmask(SIG_BLOCK, &sigset, nullptr) != 0) {  // NOLINT
+            return false;
+            // throw std::runtime_error("sigprocmask error");
+        }
+        if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
+            return false;
+            // throw std::runtime_error("pthread_sigmask error");
+        }
+
+        return s_timerData.Initialize();
+    }
 
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
@@ -51,7 +53,9 @@ public:
      * @param time - time specification of when the timer should fire as POSIX timespec
      * @param type - type of timer to create (default is one-shot)
      */
-    static bool StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT);
+    static bool StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT) {
+        return s_timerData.startTimer(label, time, type);
+    }
 
     /**
      * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
@@ -64,13 +68,8 @@ public:
      */
     template <class T, class P>
     static bool StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
-        if (s_timerData) {
-            auto ts = Chrono2Timespec(time);
-            return s_timerData->startTimer(label, ts, type);
-        } else {
-            return false; 
-            //throw std::runtime_error("TimerManager not initialized");
-        }
+        auto ts = Chrono2Timespec(time);
+        return s_timerData.startTimer(label, ts, type);
     }
 
     /**
@@ -80,17 +79,25 @@ public:
      * @param time - time expressed as a std::chrono::time_point
      */
     static bool StartTimer(
-        const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time);
+        const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time) {
+        auto secs = std::chrono::time_point_cast<std::chrono::seconds>(time);
+        auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
+
+        return s_timerData.startTimer(label, timespec {secs.time_since_epoch().count(), ns.count()}, ONE_SHOT);
+    }
 
     /**
      * @brief Cancel a one-shot timer for the specified label
      *
      * @param label - timer to be cancelled
      */
-    static bool CancelTimer(const Label &label);
+    static bool CancelTimer(const Label &label) {
+        return s_timerData.cancelTimer(label);
+    }
 
 private:
-    static std::unique_ptr<detail::TimerManagerData> s_timerData;
+    inline static detail::TimerManagerData s_timerData;
 };
 
 }  // namespace msglib

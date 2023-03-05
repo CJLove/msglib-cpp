@@ -18,14 +18,14 @@ target_link_libraries( pool pthread )
 set (mbox_SRC mbox.cpp)
 
 add_executable( mbox ${mbox_SRC})
-target_link_libraries( mbox msglib-cpp pthread )
+target_link_libraries( mbox pthread )
 
 set (timer_SRC timer.cpp)
 
 add_executable( timer ${timer_SRC})
-target_link_libraries( timer msglib-cpp pthread )
+target_link_libraries( timer pthread )
 
 set (queue_SRC queue.cpp)
 
 add_executable( queue ${queue_SRC})
-target_link_libraries( queue msglib-cpp pthread )
+target_link_libraries( queue pthread )

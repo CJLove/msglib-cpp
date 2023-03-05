@@ -128,28 +128,28 @@ void thread3(int inst) {
 }
 
 int main(int argc, char **argv) {
-    size_t smallSize = 128;
-    size_t smallCap = 128;
-    size_t largeSize = 2048;
-    size_t largeCap = 32;
+    size_t smallSize = 128;  // NOLINT
+    size_t smallCap = 128;   // NOLINT
+    size_t largeSize = 2048; // NOLINT
+    size_t largeCap = 32;    // NOLINT
     int c;
-    while ((c = getopt(argc,argv,"s:S:l:L:?")) != EOF) {
+    while ((c = getopt(argc,argv,"s:S:l:L:?")) != EOF) { // NOLINT
         switch (c) {
         case 's':
-            smallSize = std::stoul(optarg,nullptr,10);
+            smallSize = std::stoul(optarg,nullptr,10); // NOLINT
             break;
         case 'S':
-            smallCap = std::stoul(optarg,nullptr,10);
+            smallCap = std::stoul(optarg,nullptr,10); // NOLINT
             break;
         case 'l':
-            largeSize = std::stoul(optarg,nullptr,10);
+            largeSize = std::stoul(optarg,nullptr,10); // NOLINT
             break;
         case 'L':
-            largeCap = std::stoul(optarg,nullptr,10);
+            largeCap = std::stoul(optarg,nullptr,10); // NOLINT
             break;
         case '?':
             spdlog::error("Usage:\nmbox -s <smallSize> -S <smallCap> -l <largeSize> -L <largeCap>");
-            exit(1);
+            exit(1); // NOLINT
         }
     }
 
