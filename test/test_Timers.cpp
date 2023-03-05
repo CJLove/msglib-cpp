@@ -51,8 +51,21 @@ void RecurringEventTestThread(EventTester &tester) {
     mbox.UnregisterForLabel(PeriodicEvent);
 }
 
-TEST(TimerManager, OneShotPOSIX) {
-    TimerManager::Initialize();
+class TimeManagerTest: public ::testing::Test {
+protected:
+    void SetUp() override {
+        // Initialize mailbox subsystem
+        Mailbox mbox;
+        mbox.Initialize();
+
+        // Initialize timer subsystem
+        TimerManager::Initialize();
+
+    }
+
+};
+
+TEST_F(TimeManagerTest, OneShotPOSIX) {
 
     timespec ts {0, 500000000}; // NOLINT
     EventTester tester;
@@ -67,7 +80,7 @@ TEST(TimerManager, OneShotPOSIX) {
     EXPECT_TRUE(tester.received);
 }
 
-TEST(TimerManager, OneShotChrono) {
+TEST_F(TimeManagerTest, OneShotChrono) {
     EventTester tester;
 
     std::thread evt(EventTestThread, std::ref(tester));
@@ -81,7 +94,7 @@ TEST(TimerManager, OneShotChrono) {
 }
 
 #if 0
-TEST(TimerManager, OneShotTimePoint) {
+TEST_F(TimeManagerTest, OneShotTimePoint) {
     EventTester tester;
 
     auto now = std::chrono::system_clock::now();
@@ -98,7 +111,7 @@ TEST(TimerManager, OneShotTimePoint) {
 }
 #endif
 
-TEST(TimerManager, RecurringPOSIX) {
+TEST_F(TimeManagerTest, RecurringPOSIX) {
     const time_t PERIOD = 500L;
     const uint64_t MSEC2NSEC = 1000000UL;
     timespec ts {0, PERIOD * MSEC2NSEC};

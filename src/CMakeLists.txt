@@ -12,7 +12,6 @@ if (BUILD_COVERAGE)
 endif (BUILD_COVERAGE)
 
 set (msglib-cpp_SRC
-    Mailbox.cpp
     TimerManager.cpp
 )
 

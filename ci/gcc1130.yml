@@ -2,7 +2,7 @@
 platform: linux
 image_resource:
   type: registry-image
-  source: { repository: fir.love.io:3005/amd64/gcc1130 }
+  source: { repository: fir.love.io:3005/amd64/msglib-cpp-gcc1130 }
 
 inputs:
 - name: msglib-cpp-git

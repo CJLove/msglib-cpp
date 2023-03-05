@@ -116,6 +116,12 @@ if (BUILD_TESTS)
   find_package(GTest REQUIRED)
 endif()
 
+# fmt library dependency
+find_package(fmt CONFIG REQUIRED)
+
+# spdlog library dependency
+find_package(spdlog CONFIG REQUIRED)
+
 # clang-tidy
 if(ENABLE_CLANG_TIDY)
   find_program(CLANGTIDY clang-tidy)
@@ -200,7 +206,7 @@ if (BUILD_TESTS)
     include(CTest)
     if (BUILD_COVERAGE)
         include (CodeCoverage)
-        setup_target_for_coverage_gcovr_html( NAME MsgLibCoverage EXECUTABLE test/msglibTests DEPENDENCIES msglibTests BASE_DIRECTORY "../" )
+        setup_target_for_coverage_gcovr_html( NAME MsgLibCoverage EXECUTABLE test/msglibTests DEPENDENCIES msglibTests BASE_DIRECTORY "." EXCLUDE "include/msglib/detail/DiagResource.h" "test/*")
     endif (BUILD_COVERAGE)
     add_subdirectory(test)
 endif(BUILD_TESTS)
