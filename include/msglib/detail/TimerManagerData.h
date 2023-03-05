@@ -110,7 +110,7 @@ struct TimerResources {
         }
     }
 
-    TimerResources() : m_thread(std::thread(&TimerResources::HandleSignals, this)) {
+    TimerResources(std::recursive_mutex &mutex) : m_mutex(mutex), m_thread(std::thread(&TimerResources::HandleSignals, this)) {
     }
 
     ~TimerResources() {
@@ -120,9 +120,9 @@ struct TimerResources {
 
     Mailbox m_mailbox;
     TimerMap m_timers;
-    std::recursive_mutex m_mutex;
-    std::thread m_thread;
     std::atomic<bool> m_shutdown = false;
+    std::recursive_mutex &m_mutex;
+    std::thread m_thread;
 };
 
 /**
@@ -137,9 +137,9 @@ public:
 
     bool Initialize() {
         try {
-            std::lock_guard<std::mutex> guard(m_mutex);
+            std::lock_guard<std::recursive_mutex> guard(m_mutex);
             if (!m_initialized) {
-                m_resources = std::make_unique<TimerResources>();
+                m_resources = std::make_unique<TimerResources>(m_mutex);
                 m_initialized = true;
             }
             return true;
@@ -149,7 +149,7 @@ public:
     }
 
     bool startTimer(const Label &label, const timespec &time, const TimerType_e type) {
-        std::lock_guard<std::mutex> guard(m_mutex);
+        std::lock_guard<std::recursive_mutex> guard(m_mutex);
         if (m_resources->m_timers.find(label) == m_resources->m_timers.end()) {
             m_resources->m_timers.emplace(std::piecewise_construct, std::forward_as_tuple(label),
                 std::forward_as_tuple(m_resources->m_mailbox, *this, label, time, type));
@@ -159,7 +159,7 @@ public:
     }
 
     bool cancelTimer(const Label &label) {
-        std::lock_guard<std::mutex> guard(m_mutex);
+        std::lock_guard<std::recursive_mutex> guard(m_mutex);
         auto timer = m_resources->m_timers.find(label);
         if (timer != m_resources->m_timers.end()) {
             timer->second.cancel();
@@ -173,7 +173,7 @@ private:
     /**
      * @brief Mutex protecting Timer resources
      */
-    std::mutex m_mutex;
+    std::recursive_mutex m_mutex;
 
     /**
      * @brief Flag indicating that TimerManagerData has initialized and allocated
