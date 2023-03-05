@@ -4,6 +4,7 @@
 #include "msglib/TimerManager.h"
 #include <atomic>
 #include <csignal>
+#include <ctime>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -175,7 +176,7 @@ private:
     std::mutex m_mutex;
 
     /**
-     * @brief Flag indicating that TimerManagerData has initialized and allocated 
+     * @brief Flag indicating that TimerManagerData has initialized and allocated
      *        shared resources
      */
     bool m_initialized = false;
