@@ -77,6 +77,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_TESTS "Build unit tests." ON)
+option(BUILD_SANDBOX "Build sandbox code" OFF)
 option(BUILD_COVERAGE "Build for code coverage." OFF)
 option(BUILD_SHARED_LIBS "Build Shared Libraries" ON)
 option(BUILD_STATIC_LIBS "Build Static Libraries" OFF)
@@ -116,11 +117,13 @@ if (BUILD_TESTS)
   find_package(GTest REQUIRED)
 endif()
 
+if (BUILD_EXAMPLES OR BUILD_SANDBOX)
 # fmt library dependency
 find_package(fmt CONFIG REQUIRED)
 
 # spdlog library dependency
 find_package(spdlog CONFIG REQUIRED)
+endif()
 
 # clang-tidy
 if(ENABLE_CLANG_TIDY)
@@ -199,8 +202,11 @@ if(VERBOSE)
 endif(VERBOSE)
 
 if (BUILD_EXAMPLES)
-    add_subdirectory(example)
+    add_subdirectory(example)    
 endif(BUILD_EXAMPLES)
+if (BUILD_SANDBOX)
+    add_subdirectory(sandbox)
+endif(BUILD_SANDBOX)
 if (BUILD_TESTS)
     include(CTest)
     if (BUILD_COVERAGE)

@@ -104,6 +104,7 @@ int main(int /* argc */, char ** /* argv */)
     timespec ts { 0, PERIOD * MSEC_TO_NS };
     msglib::TimerManager::StartTimer(RECURRING_TIMER, ts, msglib::PERIODIC);
 
+    // Start a bunch of one-shot timers
     for (uint16_t x = 5; x < 46; x++) {
         spdlog::info("TimerStart({}) returns {}", x, msglib::TimerManager::StartTimer(x, 100ms, msglib::ONE_SHOT));
     }

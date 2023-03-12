@@ -1,5 +1,5 @@
 #include "msglib/detail/BytePool.h"
-#include "msglib/detail/DiagResource.h"
+#include "TestResource.h"
 #include "gtest/gtest.h"
 #include <array>
 #include <memory_resource>
@@ -25,7 +25,7 @@ struct TestStruct {
 struct TestStruct2 {
     TestStruct2() = default;
 
-    TestStruct2(int a ) : m_a(a) {
+    explicit TestStruct2(int a ) : m_a(a) {
     }
 
     explicit TestStruct2(bool except) {
@@ -41,15 +41,12 @@ class BytePoolTest : public ::testing::Test {
 protected:
     BytePoolTest()
         : m_defaultResource(std::pmr::get_default_resource())
-        , m_rogueResource()
-        , m_oomResource()
-        , m_storage(std::make_unique<std::byte[]>(16384))
-        , m_bufferResource(m_storage.get(), 16384, &m_oomResource)
+        , m_storage(std::make_unique<std::byte[]>(16384))           // NOLINT
+        , m_bufferResource(m_storage.get(), 16384, &m_oomResource)  // NOLINT
         , m_syncResource(&m_bufferResource) {
     }
 
-    virtual ~BytePoolTest() noexcept {
-    }
+    ~BytePoolTest() noexcept override = default;
 
     void SetUp() override {
         // Install the rogue resource as the default to track any stray
@@ -62,11 +59,10 @@ protected:
         std::pmr::set_default_resource(m_defaultResource);
     }
 
-protected:
     std::pmr::memory_resource *m_defaultResource;
 
-    msglib::detail::TestResource m_rogueResource;
-    msglib::detail::TestResource m_oomResource;
+    TestResource m_rogueResource;
+    TestResource m_oomResource;
     std::unique_ptr<std::byte[]> m_storage;
     std::pmr::monotonic_buffer_resource m_bufferResource;
     std::pmr::synchronized_pool_resource m_syncResource;
@@ -111,10 +107,10 @@ TEST_F(BytePoolTest, DataBlockPut)
     EXPECT_TRUE(db.get() != nullptr);
     EXPECT_EQ(db.size(),sizeof(TestStruct2));
 
-    TestStruct2 t2(5);
+    TestStruct2 t2(5); // NOLINT
     EXPECT_TRUE(db.put<TestStruct2>(t2));
 
-    TestStruct t(1,2,3);
+    TestStruct t(1,2,3); // NOLINT
     EXPECT_FALSE(db.put<TestStruct>(t));
 
     pool.free(db.get());

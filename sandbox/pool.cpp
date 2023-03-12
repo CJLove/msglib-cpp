@@ -1,5 +1,5 @@
 #include "msglib/detail/BytePool.h"
-#include "msglib/detail/DiagResource.h"
+#include "DiagResource.h"
 #include <spdlog/spdlog.h>
 
 #include <array>
@@ -11,29 +11,29 @@
 // track allocation/deallocations
 
 int main(int argc, char** argv) {
-    size_t storageSize = 16384;
-    size_t capacity = 16;
-    size_t elementSize = 16;
+    size_t storageSize = 16384; // NOLINT
+    size_t capacity = 16;       // NOLINT
+    size_t elementSize = 16;    // NOLINT
     spdlog::level::level_enum log = spdlog::level::trace;
     int c;
 
-    while ((c = getopt(argc,argv,"s:c:e:l:?")) != EOF) {
+    while ((c = getopt(argc,argv,"s:c:e:l:?")) != EOF) { // NOLINT
         switch (c) {
         case 's':
-            storageSize = std::stoul(optarg,nullptr,10);
+            storageSize = std::stoul(optarg,nullptr,10); // NOLINT
             break;
         case 'c':
-            capacity = std::stoul(optarg,nullptr,10);
+            capacity = std::stoul(optarg,nullptr,10);    // NOLINT
             break;
         case 'e':
-            elementSize = std::stoul(optarg,nullptr,10);
+            elementSize = std::stoul(optarg,nullptr,10);  // NOLINT
             break;
         case 'l':
-            log = static_cast<spdlog::level::level_enum>(std::stoul(optarg,nullptr,10));
+            log = static_cast<spdlog::level::level_enum>(std::stoul(optarg,nullptr,10)); // NOLINT
             break;
         case '?':
             spdlog::error("Usage:\npool -s <storageSize> -c <capacity> -e <elementSize> -l <logLevel>");
-            exit(1);
+            exit(1); // NOLINT
         }
     }
 

@@ -35,7 +35,9 @@ void displayMsg(const char *thread, msglib::Message &msg) {
     case Msg1: {
         try {
             auto *m1 = msg.as<Message1>();
-            spdlog::info("Thread {} got Msg1[ {} {} {} {} {} ]", thread, m1->a, m1->b, m1->c, m1->d, m1->e);
+            if (m1) {
+                spdlog::info("Thread {} got Msg1[ {} {} {} {} {} ]", thread, m1->a, m1->b, m1->c, m1->d, m1->e);
+            }
         } catch (std::exception &e) {
             spdlog::error("Thread {} exception {} getting Message1", thread, e.what());
         }
@@ -43,7 +45,9 @@ void displayMsg(const char *thread, msglib::Message &msg) {
     case Msg2:
         try {
             auto *m2 = msg.as<Message2>();
-            spdlog::info("Thread {} got Msg2[ {} ]", thread, m2->a);
+            if (m2) {
+                spdlog::info("Thread {} got Msg2[ {} ]", thread, m2->a);
+            }
         } catch (std::exception &e) {
             spdlog::error("Thread {} exception {} getting Message2", thread, e.what());
         }
@@ -51,7 +55,9 @@ void displayMsg(const char *thread, msglib::Message &msg) {
     case Msg3:
         try {
             auto *t = msg.as<Message3>();
-            spdlog::info("Thread {} got Msg3[ {} {} {} ]", thread, t->a, t->b, t->c);
+            if (t) {
+                spdlog::info("Thread {} got Msg3[ {} {} {} ]", thread, t->a, t->b, t->c);
+            }
         } catch (std::exception &e) {
             spdlog::error("Thread {} exception {} getting Message3", thread, e.what());
         }
@@ -128,8 +134,8 @@ void thread3(int inst) {
 }
 
 int main(int argc, char **argv) {
-    size_t smallSize = 128;  // NOLINT
-    size_t smallCap = 128;   // NOLINT
+    size_t smallSize = 256;  // NOLINT
+    size_t smallCap = 256;   // NOLINT
     size_t largeSize = 2048; // NOLINT
     size_t largeCap = 32;    // NOLINT
     int c;
@@ -155,7 +161,7 @@ int main(int argc, char **argv) {
 
     // Main thread
     msglib::Mailbox mbox;
-    mbox.Initialize(smallSize, smallCap, largeSize, largeCap);
+    msglib::Mailbox::Initialize(smallSize, smallCap, largeSize, largeCap);
 
     std::thread t1(thread1, 1);
     std::thread t2(thread2, 2);

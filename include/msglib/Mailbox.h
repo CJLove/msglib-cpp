@@ -62,7 +62,7 @@ public:
      */
     ~Mailbox() = default;
 
-    bool Initialize() {
+    static bool Initialize() {
         return s_mailboxData.Initialize();
     }
 
@@ -76,7 +76,7 @@ public:
      * @return true
      * @return false
      */
-    bool Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap) {
+    static bool Initialize(size_t smallSize, size_t smallCap, size_t largeSize, size_t largeCap) {
         return s_mailboxData.Initialize(smallSize, smallCap, largeSize, largeCap);
     }
 

@@ -6,32 +6,6 @@
 
 namespace msglib::detail {
 
-class TestResource : public std::pmr::memory_resource {
-public:
-    TestResource(): m_invoked(false) {
-    }
-
-    bool allocatorInvoked() const {
-        return m_invoked;
-    }
-
-private:
-    bool m_invoked;
-
-    void *do_allocate(std::size_t, std::size_t) override {
-        m_invoked = true;
-        return nullptr;
-    }
-
-    void do_deallocate(void *, std::size_t, std::size_t) override {
-        m_invoked = true;
-    }
-
-    bool do_is_equal(const std::pmr::memory_resource &other) const noexcept override {
-        return this == &other;
-    }
-};
-
 /**
  * @brief DiagResource realizes the std::pmr::memory_resource interface and logs calls to 
  *        do_allocate() and do_deallocate() calls

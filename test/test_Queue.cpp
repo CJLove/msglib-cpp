@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
-#include "msglib/detail/DiagResource.h"
 #include "msglib/detail/Queue.h"
+#include "TestResource.h"
 #include <memory_resource>
 #include <mutex>
 #include <thread>
@@ -25,16 +25,12 @@ class QueueTest : public ::testing::Test {
 protected:
     QueueTest():
         m_defaultResource(std::pmr::get_default_resource()),
-        m_rogueResource(),
-        m_oomResource(),
-        m_storage(std::make_unique<std::byte[]>(16384)),
-        m_bufferResource(m_storage.get(),16384, &m_oomResource),
+        m_storage(std::make_unique<std::byte[]>(16384)),    // NOLINT
+        m_bufferResource(m_storage.get(),16384, &m_oomResource), // NOLINT
         m_syncResource(&m_bufferResource)
     {}
 
-    virtual ~QueueTest() noexcept
-    {}
-
+    ~QueueTest() noexcept override = default;
 
     void SetUp() override {
         // Install the rogue resource as the default to track any stray
@@ -48,11 +44,10 @@ protected:
         std::pmr::set_default_resource(m_defaultResource);
     }
 
-protected:
     std::pmr::memory_resource *m_defaultResource;
 
-    msglib::detail::TestResource m_rogueResource;
-    msglib::detail::TestResource m_oomResource;
+    TestResource m_rogueResource;
+    TestResource m_oomResource;
     std::unique_ptr<std::byte[]> m_storage;
     std::pmr::monotonic_buffer_resource m_bufferResource;
     std::pmr::synchronized_pool_resource m_syncResource;
