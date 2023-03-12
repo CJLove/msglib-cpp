@@ -10,7 +10,7 @@ enum TimerType_e { PERIODIC, ONE_SHOT };
 }
 
 #include "Mailbox.h"
-#include "TimeConv.h"
+#include "detail/TimeConv.h"
 #include "detail/TimerManagerData.h"
 #include <chrono>
 #include <cstdint>
@@ -28,19 +28,15 @@ public:
         sigset_t sigset;
         if (sigemptyset(&sigset) != 0) {
             return false;
-            // throw std::runtime_error("sigfillset error");
         }
         if (sigaddset(&sigset, SIGRTMIN) != 0) {
             return false;
-            // throw std::runtime_error("sigaddset error");
         }
         if (sigprocmask(SIG_BLOCK, &sigset, nullptr) != 0) {  // NOLINT
             return false;
-            // throw std::runtime_error("sigprocmask error");
         }
         if (pthread_sigmask(SIG_BLOCK, &sigset, nullptr) != 0) {
             return false;
-            // throw std::runtime_error("pthread_sigmask error");
         }
 
         return s_timerData.Initialize();
@@ -52,9 +48,28 @@ public:
      * @param label - label to use for this timer
      * @param time - time specification of when the timer should fire as POSIX timespec
      * @param type - type of timer to create (default is one-shot)
+     * @return true - timer started successfully
+     * @return false - timer not started
      */
     static bool StartTimer(const Label &label, const timespec &time, const TimerType_e type = ONE_SHOT) {
         return s_timerData.startTimer(label, time, type);
+    }
+
+    /**
+     * @brief Start a one-shot or recurring timer resulting in the specified label being signalled
+     * 
+     * @param label - label to use for this timer
+     * @param time - time specification of when the timer should fire as POSIX timeval
+     * @param type - type of timer to create (default is one-shot)
+     * @return true - timer started successfully
+     * @return false - timer not started
+     */
+    static bool StartTimer(const Label &label, const timeval &time, const TimerType_e type = ONE_SHOT) {
+        timespec ts { 0, 0 };
+        if (detail::Timeval2Timespec(time,ts)) {
+            return s_timerData.startTimer(label, ts, type);
+        }
+        return false;
     }
 
     /**
@@ -65,10 +80,12 @@ public:
      * @param label - label to use for this timer
      * @param time - time expressed as a std::chrono::duration
      * @param type - type of timer to create (default is one-shot)
+     * @return true - timer started successfully
+     * @return false - timer not started
      */
     template <class T, class P>
     static bool StartTimer(const Label &label, const std::chrono::duration<T, P> time, const TimerType_e type = ONE_SHOT) {
-        auto ts = Chrono2Timespec(time);
+        auto ts = detail::Chrono2Timespec(time);
         return s_timerData.startTimer(label, ts, type);
     }
 
@@ -77,9 +94,11 @@ public:
      *
      * @param label - label to use for this timer
      * @param time - time expressed as a std::chrono::time_point
+     * @return true - timer started successfully
+     * @return false - timer not started
      */
-    static bool StartTimer(
-        const Label &label, const std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds> &time) {
+    template <typename C, typename D>
+    static bool StartTimer(const Label &label, std::chrono::time_point<C, D> &time) {
         auto secs = std::chrono::time_point_cast<std::chrono::seconds>(time);
         auto ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(time) -
             std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
@@ -91,6 +110,8 @@ public:
      * @brief Cancel a one-shot timer for the specified label
      *
      * @param label - timer to be cancelled
+     * @return true - timer cancelled successfully
+     * @return false - timer not cancelled
      */
     static bool CancelTimer(const Label &label) {
         return s_timerData.cancelTimer(label);

@@ -65,7 +65,7 @@ protected:
 
 };
 
-TEST_F(TimeManagerTest, OneShotPOSIX) {
+TEST_F(TimeManagerTest, OneShotPOSIXTimespec) {
 
     timespec ts {0, 500000000}; // NOLINT
     EventTester tester;
@@ -73,6 +73,22 @@ TEST_F(TimeManagerTest, OneShotPOSIX) {
     std::thread evt(EventTestThread, std::ref(tester));
 
     TimerManager::StartTimer(OneShotEvent, ts, msglib::ONE_SHOT);
+
+    std::this_thread::sleep_for(1s);
+
+    evt.join();
+    EXPECT_TRUE(tester.received);
+}
+
+
+TEST_F(TimeManagerTest, OneShotPOSIXTimeval) {
+
+    timeval tv {0, 500000}; // NOLINT
+    EventTester tester;
+
+    std::thread evt(EventTestThread, std::ref(tester));
+
+    TimerManager::StartTimer(OneShotEvent, tv, msglib::ONE_SHOT);
 
     std::this_thread::sleep_for(1s);
 
@@ -98,11 +114,11 @@ TEST_F(TimeManagerTest, OneShotTimePoint) {
     EventTester tester;
 
     auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::time_point_cast<std::chrono::nanoseconds> (now + 1s);
+    auto time = now + 1s;
 
     std::thread evt(EventTestThread, std::ref(tester));
 
-    TimerManager::StartTimer(OneShotEvent, time, Timer::ONE_SHOT);
+    TimerManager::StartTimer(OneShotEvent, time, msglib::ONE_SHOT);
 
     std::this_thread::sleep_for(2s);
 
