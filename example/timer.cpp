@@ -13,7 +13,6 @@ const msglib::Label EXIT_THREAD = 4;
 
 void thread1(int inst)
 {
-    const int MAX_EVENTS = 10;
     msglib::Mailbox mbox;
     spdlog::info("Thread {} registering for RECURRING_TIMER", inst);
     mbox.RegisterForLabel(RECURRING_TIMER);
@@ -29,9 +28,7 @@ void thread1(int inst)
             ++count;
             spdlog::info("Thread {} received RECURRING_TIMER event {}", inst, count);
 
-            if (count == MAX_EVENTS) {
-                mbox.SendSignal(DONE);
-            }
+
             mbox.ReleaseMessage(msg);
         } else if (msg.m_label == EXIT_THREAD) {
             spdlog::info("Thread {} received EXIT_THREAD", inst);
@@ -48,6 +45,9 @@ void thread2(int inst)
     msglib::Mailbox mbox;
     spdlog::info("Thread {} registering for ONE_SHOT", inst);
     mbox.RegisterForLabel(ONE_SHOT_TIMER);
+    for (msglib::Label i = 5; i <= 45; i++) {
+        mbox.RegisterForLabel(i);
+    }
     mbox.RegisterForLabel(EXIT_THREAD);
     unsigned count = 0;
 
@@ -60,14 +60,26 @@ void thread2(int inst)
             count++;
             spdlog::info("Thread {} received ONE_SHOT event", inst, count);
             mbox.ReleaseMessage(msg);
+        }
+        else if (msg.m_label >= 5 && msg.m_label <= 45) {
+            spdlog::info("Thread {} received label {}", inst, msg.m_label);
+            mbox.ReleaseMessage(msg);
 
-        } else if (msg.m_label == EXIT_THREAD) {
+            if (msg.m_label == 45) {
+                mbox.SendSignal(DONE);
+            }
+        }
+
+        else if (msg.m_label == EXIT_THREAD) {
             spdlog::info("Thread {} received EXIT_THREAD", inst);
             mbox.ReleaseMessage(msg);
             break;
         }
     }
     mbox.UnregisterForLabel(ONE_SHOT_TIMER);
+    for (msglib::Label i = 5; i < 45; i++) {
+        mbox.RegisterForLabel(i);
+    }
     mbox.UnregisterForLabel(EXIT_THREAD);
 
 }
@@ -91,6 +103,10 @@ int main(int /* argc */, char ** /* argv */)
     // Start a recurring timer using a POSIX timespec
     timespec ts { 0, PERIOD * MSEC_TO_NS };
     msglib::TimerManager::StartTimer(RECURRING_TIMER, ts, msglib::PERIODIC);
+
+    for (uint16_t x = 5; x < 46; x++) {
+        spdlog::info("TimerStart({}) returns {}", x, msglib::TimerManager::StartTimer(x, 100ms, msglib::ONE_SHOT));
+    }
 
     // Start a one-shot timer using a std::chrono::duration value in msec (literal form)
     msglib::TimerManager::StartTimer(ONE_SHOT_TIMER, 900ms, msglib::ONE_SHOT);

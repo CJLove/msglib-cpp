@@ -2,10 +2,10 @@
 
 #include "msglib/Mailbox.h"
 #include "msglib/TimerManager.h"
+#include <array>
 #include <atomic>
 #include <csignal>
 #include <ctime>
-#include <map>
 #include <mutex>
 #include <thread>
 
@@ -52,6 +52,9 @@ public:
         timer_delete(m_timer);
     }
 
+    /**
+     * @brief Cancel a timer
+     */
     void cancel() {
         itimerspec itsnew {};
         itsnew.it_value.tv_sec = itsnew.it_value.tv_nsec = 0;
@@ -59,6 +62,11 @@ public:
         timer_settime(m_timer, 0, &itsnew, &m_spec);
     }
 
+    /**
+     * @brief Handle a timer event firing.
+     *
+     * NOTE: Implementation separate to break circular dependency with TimerManagerData
+     */
     void timerEvent();
 
 private:
@@ -76,7 +84,6 @@ private:
  *
  */
 struct TimerResources {
-    using TimerMap = std::map<Label, Timer>;
 
     /**
      * @brief HandleSignals is a thread which handles SIGRTMIN which indicates that a timer
@@ -110,7 +117,12 @@ struct TimerResources {
         }
     }
 
-    TimerResources(std::recursive_mutex &mutex) : m_mutex(mutex), m_thread(std::thread(&TimerResources::HandleSignals, this)) {
+    TimerResources(std::recursive_mutex &mutex)
+        : m_bytes(std::make_unique<std::byte[]>(65536 * sizeof(Timer)))
+        , m_byteResource(m_bytes.get(), 65536 * sizeof(Timer), std::pmr::null_memory_resource())
+        , m_timerResource(&m_byteResource)
+        , m_mutex(mutex)
+        , m_thread(std::thread(&TimerResources::HandleSignals, this)) {
     }
 
     ~TimerResources() {
@@ -118,10 +130,41 @@ struct TimerResources {
         m_thread.join();
     }
 
+    /**
+     * @brief Byte array supporting the byteResource
+     */
+    std::unique_ptr<std::byte[]> m_bytes;
+
+    /**
+     * @brief Monotonic buffer resource using byte array
+     */
+    std::pmr::monotonic_buffer_resource m_byteResource;
+
+    std::pmr::polymorphic_allocator<Timer> m_timerResource;
+
+    /**
+     * @brief Mailbox to use for timer signals
+     */
     Mailbox m_mailbox;
-    TimerMap m_timers;
+
+    /**
+     * @brief Collection of current outstanding timers
+     */
+    std::array<Timer *, 65536> m_timers;
+
+    /**
+     * @brief Flag indicating that shutdown has been triggered
+     */
     std::atomic<bool> m_shutdown = false;
+
+    /**
+     * @brief Mutex protecting timer resources
+     */
     std::recursive_mutex &m_mutex;
+
+    /**
+     * @brief Thread handling SIGRTMIN signals
+     */
     std::thread m_thread;
 };
 
@@ -150,9 +193,10 @@ public:
 
     bool startTimer(const Label &label, const timespec &time, const TimerType_e type) {
         std::lock_guard<std::recursive_mutex> guard(m_mutex);
-        if (m_resources->m_timers.find(label) == m_resources->m_timers.end()) {
-            m_resources->m_timers.emplace(std::piecewise_construct, std::forward_as_tuple(label),
-                std::forward_as_tuple(m_resources->m_mailbox, *this, label, time, type));
+        if (m_resources->m_timers[label] == nullptr) {
+            m_resources->m_timers[label] = m_resources->m_timerResource.allocate(1);
+            m_resources->m_timerResource.construct<Timer>(
+                m_resources->m_timers[label], m_resources->m_mailbox, *this, label, time, type);
             return true;
         }
         return false;
@@ -160,10 +204,11 @@ public:
 
     bool cancelTimer(const Label &label) {
         std::lock_guard<std::recursive_mutex> guard(m_mutex);
-        auto timer = m_resources->m_timers.find(label);
-        if (timer != m_resources->m_timers.end()) {
-            timer->second.cancel();
-            m_resources->m_timers.erase(label);
+        if (m_resources->m_timers[label] != nullptr) {
+            m_resources->m_timers[label]->cancel();
+            m_resources->m_timerResource.destroy<Timer>(m_resources->m_timers[label]);
+            m_resources->m_timerResource.deallocate(m_resources->m_timers[label], 1);
+            m_resources->m_timers[label] = nullptr;
             return true;
         }
         return false;
