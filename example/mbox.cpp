@@ -1,4 +1,5 @@
-#include "msglib/Mailbox.h"
+//#include "msglib/Mailbox.h"
+#include "msglib/Msglib.h"
 #include <iostream>
 #include <spdlog/spdlog.h>
 #include <thread>
@@ -161,7 +162,7 @@ int main(int argc, char **argv) {
 
     // Main thread
     msglib::Mailbox mbox;
-    msglib::Mailbox::Initialize(smallSize, smallCap, largeSize, largeCap);
+    msglib::Initialize(smallSize, smallCap, largeSize, largeCap);
 
     std::thread t1(thread1, 1);
     std::thread t2(thread2, 2);

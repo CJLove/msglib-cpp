@@ -9,9 +9,10 @@ The msglib-cpp header-only library supports asynchronous messaging and signallin
 ## Requirements
 - C++17 and later, as std::pmr is used
 - spdlog and fmt (for example and sandbox code)
+- googletest for unit tests
 - Support for POSIX per-process timers
 
-## Concepts
+## Msglib Concepts
 ### Labels
 A **label** is an arbitrary 16-bit value identifying a **signal** or **message** that will be sent between threads.
 
@@ -31,16 +32,16 @@ See the `mbox.cpp` and `timer.cpp` example code for complete examples of using m
 
 ## Specifying "small" and "large" pool sizes and capacities
 ```c++
-#include "msglib/Mailbox.h"
+#include "msglib/Msglib.h"
 
 // Specifying explicit "small" and "large" pool configurations:
 // "small" pool element size 128 and capacity 1024
 // "large" pool category wih size 8192 and capacity 32
-msglib::Mailbox::Initialize(128,1024,8192,32);
+msglib::Initialize(128,1024,8192,32);
 ```
 
 ## Mailbox
-Instances of the `Mailbox` class can be declared per-thread or anywhere that messages or signals need to be sent or received.  Each instance has its own fixed-size queue for incoming signals and messages; this queue size can be specified at declaration time.
+Instances of the `Mailbox` class can be declared per-thread or anywhere that messages or signals need to be sent or received.  Each instance has its own fixed-size queue for incoming signals and messages; this queue size can be specified at declaration time as a constructor argument.
 
 The `Mailbox::RegisterForLabel()` method can be used to register/subscribe to receive a particular Label for this `Mailbox` instance.
 

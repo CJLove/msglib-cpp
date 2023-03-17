@@ -1,6 +1,7 @@
 
-#include "msglib/Mailbox.h"
-#include "msglib/TimerManager.h"
+//#include "msglib/Mailbox.h"
+//#include "msglib/TimerManager.h"
+#include "msglib/Msglib.h"
 #include <spdlog/spdlog.h>
 #include <iostream>
 #include <thread>
@@ -88,14 +89,12 @@ int main(int /* argc */, char ** /* argv */)
 {
     using namespace std::chrono_literals;
 
-    spdlog::info("Initializing Mailbox subsystem");
     msglib::Mailbox mbox;
-    mbox.Initialize();
 
     const time_t PERIOD = 750;  // msec
     const ulong MSEC_TO_NS = 1000000;
-    spdlog::info("Initializing Timer subsystem");
-    msglib::TimerManager::Initialize();
+    spdlog::info("Initializing Timer & Mailbox subsystem");
+    msglib::Initialize();
 
     std::thread t1(thread1,1);
     std::thread t2(thread2,2);
