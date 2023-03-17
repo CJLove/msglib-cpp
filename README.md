@@ -1,3 +1,5 @@
+[![ci](https://github.com/CJLove/msglib-cpp/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/CJLove/msglib-cpp/actions/workflows/ci.yml)
+
 # msglib-cpp
 
 The msglib-cpp header-only library supports asynchronous messaging and signalling between threads within a process.
