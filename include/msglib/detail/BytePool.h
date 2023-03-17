@@ -1,6 +1,6 @@
 #pragma once
 #include <atomic>
-#include <cstdalign>
+#include <stdalign.h>
 #include <cstddef>
 #include <memory>
 #include <memory_resource>
