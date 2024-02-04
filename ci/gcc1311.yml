@@ -8,5 +8,5 @@ inputs:
 - name: msglib-cpp-git
       
 run:
-  path: ./msglib-cpp-git/ci/build.sh
-  args: [ "-builddir=build", "-cover" ]   
+  path: ./msglib-cpp-git/build.sh
+  args: [ "-builddir=build" ]   
