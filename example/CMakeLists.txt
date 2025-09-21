@@ -13,10 +13,10 @@ include_directories(
 set (mbox_SRC mbox.cpp)
 
 add_executable( mbox ${mbox_SRC})
-target_link_libraries( mbox Threads::Threads rt )
+target_link_libraries( mbox Threads::Threads spdlog::spdlog rt )
 
 set (timer_SRC timer.cpp)
 
 add_executable( timer ${timer_SRC})
-target_link_libraries( timer Threads::Threads rt )
+target_link_libraries( timer Threads::Threads spdlog::spdlog rt )
 

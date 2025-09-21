@@ -29,9 +29,7 @@ set ( msglibTests_SRC
 add_executable ( msglibTests ${msglibTests_SRC} )
 
 
-target_link_libraries( msglibTests gtest gtest_main )
-
-target_link_libraries( msglibTests Threads::Threads rt )
+target_link_libraries( msglibTests GTest::gtest GTest::gtest_main Threads::Threads rt )
 
 if (BUILD_COVERAGE)
     target_link_libraries( msglibTests gcov )
